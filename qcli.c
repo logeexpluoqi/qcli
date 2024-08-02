@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-02 14:55
+ * @ Modified time: 2024-08-02 15:17
  * @ Description:
  */
 
@@ -256,9 +256,9 @@ static int _cmd_callback(QCliInterface *cli)
             result = _cmd->callback(cli->argc, cli->argv);
             if(result == QCLI_EOK) {
                 return 0;
-            } else if(result == QCLI_ERR_PARAM){
+            } else if(result == QCLI_ERR_PARAM) {
                 cli->print("\r\n #! parameter error !");
-            }else if(result == QCLI_ERR_PARAM_LESS) {
+            } else if(result == QCLI_ERR_PARAM_LESS) {
                 cli->print("\r\n #! parameter less !");
             } else if(result == QCLI_ERR_PARAM_MORE) {
                 cli->print("\r\n #! parameter more !");
@@ -355,6 +355,15 @@ int qcli_exec(QCliInterface *cli, char c)
         } else {
             cli->print("\r\n");
         }
+        if(_strcmp(cli->args, "hs") != 0) {
+            if(_strcmp(cli->history[(cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
+                _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
+                cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
+                if(cli->history_num < QCLI_HISTORY_MAX) {
+                    cli->history_num++;
+                }
+            }
+        }
         if(_parser(cli, cli->args, cli->args_size) != 0) {
             _memset(cli->args, 0, cli->args_size);
             _memset(&cli->argv, 0, cli->argc);
@@ -362,18 +371,6 @@ int qcli_exec(QCliInterface *cli, char c)
             cli->argc = 0;
             cli->print(" #! parse error !\r\n");
             return 0;
-        }
-        if((_strcmp(cli->history[(cli->history_index - 1) % QCLI_HISTORY_MAX], cli->argv[0]) != 0) && _strcmp(cli->argv[0], "hs") != 0) {
-            for(uint16_t i = 0; i < cli->args_size; i++) {
-                if(cli->args[i] == 0) {
-                    cli->args[i] = _KEY_SPACE;
-                }
-            }
-            _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
-            cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
-            if(cli->history_num < QCLI_HISTORY_MAX) {
-                cli->history_num++;
-            }
         }
         _cmd_callback(cli);
         _memset(cli->args, 0, cli->args_size);
