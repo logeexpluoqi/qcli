@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-02 14:33
+ * @ Modified time: 2024-08-02 14:55
  * @ Description:
  */
 
@@ -364,6 +364,11 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
         if((_strcmp(cli->history[(cli->history_index - 1) % QCLI_HISTORY_MAX], cli->argv[0]) != 0) && _strcmp(cli->argv[0], "hs") != 0) {
+            for(uint16_t i = 0; i < cli->args_size; i++) {
+                if(cli->args[i] == 0) {
+                    cli->args[i] = _KEY_SPACE;
+                }
+            }
             _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
             cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
             if(cli->history_num < QCLI_HISTORY_MAX) {
