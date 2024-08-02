@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-03 23:35
+ * @ Modified time: 2024-08-02 14:33
  * @ Description:
  */
 
@@ -15,7 +15,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _QCLI_NULL           ((void *)0)
 
 #define _KEY_BACKSPACE       '\b'
-#define _KEY_SPACE           '\20'
+#define _KEY_SPACE           '\x20'
 #define _KEY_ENTER           '\r'
 #define _KEY_ESC             '\x1b'
 #define _KEY_TAB             '\t'
@@ -222,12 +222,17 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
     if(len > QCLI_CMD_STR_MAX) {
         return -1;
     }
-    cli->argv[cli->argc] = str;
-    cli->argc++;
-    for(uint16_t i = 1; i < len; i++) {
+    for(uint16_t i = 0; i < len; i++) {
+        if((str[i] != _KEY_SPACE) && (i == 0)) {
+            cli->argv[cli->argc] = str;
+            cli->argc++;
+            continue;
+        }
+
         if(str[i] == _KEY_SPACE) {
+            str[i] = 0;
             if(str[i + 1] != _KEY_SPACE) {
-                cli->argv[cli->argc] = &cli->args[i + 1];
+                cli->argv[cli->argc] = &str[i + 1];
                 if(cli->argc > QCLI_CMD_ARGC_MAX) {
                     return -2;
                 } else {
@@ -251,14 +256,16 @@ static int _cmd_callback(QCliInterface *cli)
             result = _cmd->callback(cli->argc, cli->argv);
             if(result == QCLI_EOK) {
                 return 0;
-            } else if(result == QCLI_ERR_PARAM_LESS) {
-                cli->print(" #! parameter less !");
+            } else if(result == QCLI_ERR_PARAM){
+                cli->print("\r\n #! parameter error !");
+            }else if(result == QCLI_ERR_PARAM_LESS) {
+                cli->print("\r\n #! parameter less !");
             } else if(result == QCLI_ERR_PARAM_MORE) {
-                cli->print(" #! parameter more !");
+                cli->print("\r\n #! parameter more !");
             } else if(result == QCLI_ERR_PARAM_TYPE) {
-                cli->print(" #! parameter type error !");
+                cli->print("\r\n #! parameter type error !");
             } else {
-                cli->print(" #! unknown error !");
+                cli->print("\r\n #! unknown error !");
             }
             return 0;
         } else {
@@ -328,6 +335,7 @@ int qcli_exec(QCliInterface *cli, char c)
     if(c == _KEY_BACKSPACE) {
         if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
             cli->args_size--;
+            cli->args_index--;
             cli->args[cli->args_size] = '\0';
             cli->print("\b \b");
         } else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {

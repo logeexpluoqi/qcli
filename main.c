@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-02 03:24
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-02 13:01
+ * @ Modified time: 2024-08-02 14:34
  * @ Description:
  */
 
@@ -15,9 +15,40 @@
 
 static QCliInterface cli;
 
+static QCliCmd _cmd_1;
+static int _cmd_1_hdl(int argc, char **argv)
+{
+    if(argc == 1) {
+        printf(" cmd_1 callback...\r\n");
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
+static QCliCmd _cmd_2;
+static int _cmd_2_hdl(int argc, char **argv)
+{
+    if(argc == 1){
+        printf(" -test <str>\r\n");
+    } else if(argc == 3){
+        if(strcmp(argv[1], "test") == 0){
+            printf(" str: %s\r\n", argv[2]);
+        } else {
+            return QCLI_ERR_PARAM_TYPE;
+        }
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 int main()
 {
     qcli_init(&cli, printf);
+
+    qcli_add(&cli, &_cmd_1, "cmd1", _cmd_1_hdl, "test command 1");
+    qcli_add(&cli, &_cmd_2, "cmd2", _cmd_2_hdl, "test command 2");
     char ch;
     for (;;) {
         if(system("stty raw -echo") < 0){
