@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-03 23:34
+ * @ Modified time: 2024-08-05 00:21
  * @ Description:
  */
 
@@ -68,6 +68,8 @@ int qcli_add(QCliInterface *interface, QCliCmd *cmd, const char *name, QCliCallb
 int qcli_remove(QCliInterface *interface, QCliCmd *cmd);
 
 int qcli_exec(QCliInterface *interface, char c);
+
+int qcli_exec_str(QCliInterface *interface, char *str);
 
 #ifdef __cplusplus
 }

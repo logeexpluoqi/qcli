@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-02 03:24
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-02 14:34
+ * @ Modified time: 2024-08-05 01:03
  * @ Description:
  */
 
@@ -49,6 +49,9 @@ int main()
 
     qcli_add(&cli, &_cmd_1, "cmd1", _cmd_1_hdl, "test command 1");
     qcli_add(&cli, &_cmd_2, "cmd2", _cmd_2_hdl, "test command 2");
+    qcli_exec_str(&cli, "cmd1");
+    qcli_exec_str(&cli, "cmd2 ddd");
+    qcli_exec_str(&cli, "cmd2 test exec_str_test");
     char ch;
     for (;;) {
         if(system("stty raw -echo") < 0){

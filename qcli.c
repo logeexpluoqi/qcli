@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-02 15:17
+ * @ Modified time: 2024-08-05 01:02
  * @ Description:
  */
 
@@ -445,4 +445,17 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         cli->print("%c", c);
     }
+}
+
+int qcli_exec_str(QCliInterface *cli, char *str)
+{
+    uint16_t len;
+    if(cli == _QCLI_NULL || str == _QCLI_NULL) {
+        return -1;
+    }
+    len = _strlen(str);
+    _memset(cli->args, 0, cli->args_size);
+    _memcpy(cli->args, str, len);
+    cli->args_size = len;
+    return qcli_exec(cli, _KEY_ENTER);
 }
