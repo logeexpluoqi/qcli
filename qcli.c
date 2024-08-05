@@ -51,7 +51,7 @@ static void *_memcpy(void *dest, const void *src, uint32_t len)
 {
     char *d;
     const char *s;
-    if((dest > (src + len)) || (dest < src)) {
+    if(((char*)dest > ((char*)src + len)) || ((char*)dest < (char*)src)) {
         d = dest;
         s = src;
         while(len--) {
@@ -445,6 +445,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         cli->print("%c", c);
     }
+    return 0;
 }
 
 int qcli_exec_str(QCliInterface *cli, char *str)
