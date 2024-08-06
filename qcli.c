@@ -368,8 +368,11 @@ int qcli_exec(QCliInterface *cli, char c)
             _memset(cli->args, 0, cli->args_size);
             _memset(&cli->argv, 0, cli->argc);
             cli->args_size = 0;
+            cli->args_index = 0;
             cli->argc = 0;
-            cli->print(" #! parse error !\r\n");
+            cli->history_recall_times = 0;
+            cli->history_recall_index = cli->history_index;
+            cli->print(" #! parse error !\r\n%s", _PERFIX);
             return 0;
         }
         _cmd_callback(cli);
