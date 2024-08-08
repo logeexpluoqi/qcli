@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-08 20:16
+ * @ Modified time: 2024-08-08 20:29
  * @ Description:
  */
 
@@ -417,6 +417,12 @@ int qcli_exec(QCliInterface *cli, char c)
             cli->history_recall_times--;
             cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
         } else {
+            _memset(cli->args, 0, cli->args_size);
+            _memset(&cli->argv, 0, cli->argc);
+            cli->args_size = 0;
+            cli->args_index = 0;
+            cli->argc = 0;
+            cli->print("%s%s", _CLEAR_LINE, _PERFIX);
             return 0;
         }
     } else if(c == _KEY_LEFT) {
