@@ -389,6 +389,9 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
         if(cli->history_recall_times < cli->history_num) {
+            if(cli->history_recall_index == 0){
+                cli->history_recall_index = QCLI_HISTORY_MAX;
+            } 
             cli->history_recall_index = (cli->history_recall_index - 1) % QCLI_HISTORY_MAX;
             _memset(cli->args, 0, cli->args_size);
             cli->args_size = _strlen(cli->history[cli->history_recall_index]);
