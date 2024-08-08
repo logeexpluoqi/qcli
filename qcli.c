@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-08 20:05
+ * @ Modified time: 2024-08-08 20:16
  * @ Description:
  */
 
@@ -51,15 +51,15 @@ static void *_memcpy(void *dest, const void *src, uint32_t len)
 {
     char *d;
     const char *s;
-    if(((char*)dest > ((char*)src + len)) || ((char*)dest < (char*)src)) {
+    if(((char *)dest > ((char *)src + len)) || ((char *)dest < (char *)src)) {
         d = dest;
         s = src;
         while(len--) {
             *d++ = *s++;
         }
     } else {
-        d = (char *)(dest + len - 1);
-        s = (char *)(src + len - 1);
+        d = (char *)((char *)dest + len - 1);
+        s = (char *)((char *)src + len - 1);
         while(len--) {
             *d-- = *s--;
         }
@@ -179,7 +179,7 @@ static int _help_cb(int argc, char **argv)
 {
     QCliList *_node;
     QCliCmd *_cmd;
-    uint32_t i, j, k = 0;
+    uint32_t j, k = 0;
     int len;
     _help.cli->print("  Commands       Usage \r\n");
     _help.cli->print(" ----------     -------\r\n");
@@ -391,9 +391,9 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
         if(cli->history_recall_times < cli->history_num) {
-            if(cli->history_recall_index == 0){
+            if(cli->history_recall_index == 0) {
                 cli->history_recall_index = QCLI_HISTORY_MAX;
-            } 
+            }
             cli->history_recall_index = (cli->history_recall_index - 1) % QCLI_HISTORY_MAX;
             _memset(cli->args, 0, cli->args_size);
             cli->args_size = _strlen(cli->history[cli->history_recall_index]);
@@ -408,7 +408,7 @@ int qcli_exec(QCliInterface *cli, char c)
         if(cli->history_num == 0) {
             return 0;
         }
-        if(cli->history_recall_times > 0) {
+        if(cli->history_recall_times > 1) {
             cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
             _memset(cli->args, 0, cli->args_size);
             cli->args_size = _strlen(cli->history[cli->history_recall_index]);
