@@ -360,7 +360,7 @@ int qcli_exec(QCliInterface *cli, char c)
                 cli->print("\r\n");
             }
         }
-        if((_strcmp(cli->args, "hs") != 0) && (!cli->history_num)) {
+        if((_strcmp(cli->args, "hs") != 0) && (!cli->is_exec_str)) {
             if(_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
                 _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
                 _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
