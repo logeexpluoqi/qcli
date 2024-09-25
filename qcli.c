@@ -232,7 +232,7 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
 
         if(str[i] == _KEY_SPACE) {
             str[i] = 0;
-            if(str[i + 1] != _KEY_SPACE) {
+            if((str[i + 1] != _KEY_SPACE) && (str[i + 1] != 0)) {
                 cli->argv[cli->argc] = &str[i + 1];
                 if(cli->argc > QCLI_CMD_ARGC_MAX) {
                     return -2;
