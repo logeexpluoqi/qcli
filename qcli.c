@@ -471,17 +471,49 @@ int qcli_exec(QCliInterface *cli, char c)
 
 int qcli_exec_str(QCliInterface *cli, char *str)
 {
-    uint16_t len;
-    int ret;
     if(cli == _QCLI_NULL || str == _QCLI_NULL) {
         return -1;
     }
-    len = _strlen(str);
-    _memset(cli->args, 0, cli->args_size);
-    _memcpy(cli->args, str, len);
-    cli->args_size = len;
-    cli->is_exec_str = 1;
-    ret = qcli_exec(cli, _KEY_ENTER);
-    cli->is_exec_str = 0;
-    return ret;
+    uint16_t argc = 0;
+    char *argv[QCLI_CMD_ARGC_MAX + 1] = {0};
+    char args[QCLI_CMD_STR_MAX + 1] = {0};
+    int ret;
+    uint16_t len = _strlen(str);
+    _memcpy(args, str, len);
+    for(uint16_t i = 0; i < len; i++) {
+        if((args[i] != _KEY_SPACE) && (i == 0)) {
+            argv[argc] = args;
+            argc++;
+            continue;
+        }
+
+        if(args[i] == _KEY_SPACE) {
+            args[i] = 0;
+            if(args[i + 1] != _KEY_SPACE) {
+                argv[argc] = &args[i + 1];
+                if(argc > QCLI_CMD_ARGC_MAX) {
+                    return -2;
+                } else {
+                    argc++;
+                }
+            }
+        }
+    }
+    QCliList *_node;
+    QCliCmd *_cmd;
+    int result = 0;
+    QCLI_ITERATOR(_node, &cli->cmds)
+    {
+        _cmd = QCLI_ENTRY(_node, QCliCmd, node);
+        if(_strcmp(argv[0], _cmd->name) == 0) {
+            if(_cmd->callback(argc, argv) != 0) {
+                return -3;
+            } else {
+                return 0;
+            }
+        } else {
+            continue;
+        }
+    }
+    return -4;
 }

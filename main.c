@@ -18,8 +18,13 @@ static QCliInterface cli;
 static QCliCmd _cmd_1;
 static int _cmd_1_hdl(int argc, char **argv)
 {
+    printf(" in cmd1, argc: %d, argv: <", argc);
+    for(int i = 0; i < argc; i ++){
+        printf("%s ", argv[i]);
+    }
+    printf(">\r\n");
     if(argc == 1) {
-        printf(" cmd_1 callback...\r\n");
+        printf(" --argc: %d\r\n", 1);
     } else {
         return -1;
     }
@@ -29,14 +34,15 @@ static int _cmd_1_hdl(int argc, char **argv)
 static QCliCmd _cmd_2;
 static int _cmd_2_hdl(int argc, char **argv)
 {
+    printf(" in cmd2, argc %d, argv: <", argc);
+    for(int i = 0; i < argc; i ++){
+        printf("%s ", argv[i]);
+    }
+    printf(">\r\n");
     if(argc == 1){
-        printf(" -test <str>\r\n");
+        printf(" --argc: %d\r\n", 1);
     } else if(argc == 3){
-        if(strcmp(argv[1], "test") == 0){
-            printf(" str: %s\r\n", argv[2]);
-        } else {
-            return QCLI_ERR_PARAM_TYPE;
-        }
+        printf(" --argc: %d\r\n", 3);
     } else {
         return -1;
     }
@@ -49,9 +55,13 @@ int main()
 
     qcli_add(&cli, &_cmd_1, "cmd1", _cmd_1_hdl, "test command 1");
     qcli_add(&cli, &_cmd_2, "cmd2", _cmd_2_hdl, "test command 2");
-    qcli_exec_str(&cli, "cmd1");
-    qcli_exec_str(&cli, "cmd2 ddd");
-    qcli_exec_str(&cli, "cmd2 test exec_str_test");
+    int ret;
+    ret = qcli_exec_str(&cli, "cmd1");
+    printf(" cmd1_exec: %d\r\n", ret);
+    ret = qcli_exec_str(&cli, "cmd2 ddd");
+    printf(" cmd2_exec1: %d\r\n", ret);
+    ret = qcli_exec_str(&cli, "cmd2 test exec_str_test");
+    printf(" cmd2_exec2: %d\r\n", ret);
     char ch;
     for (;;) {
         if(system("stty raw -echo") < 0){
