@@ -477,7 +477,6 @@ int qcli_exec_str(QCliInterface *cli, char *str)
     uint16_t argc = 0;
     char *argv[QCLI_CMD_ARGC_MAX + 1] = {0};
     char args[QCLI_CMD_STR_MAX + 1] = {0};
-    int ret;
     uint16_t len = _strlen(str);
     _memcpy(args, str, len);
     for(uint16_t i = 0; i < len; i++) {
@@ -501,7 +500,6 @@ int qcli_exec_str(QCliInterface *cli, char *str)
     }
     QCliList *_node;
     QCliCmd *_cmd;
-    int result = 0;
     QCLI_ITERATOR(_node, &cli->cmds)
     {
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
