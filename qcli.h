@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-08-05 00:21
+ * @ Modified time: 2024-11-02 17:40
  * @ Description:
  */
 
@@ -15,9 +15,9 @@ extern "C" {
 
 #include <stdint.h>
 
-typedef struct _list{
-    struct _list *prev;
-    struct _list *next;
+typedef struct _qcli_list{
+    struct _qcli_list *prev;
+    struct _qcli_list *next;
 } QCliList;
 
 #define QCLI_HISTORY_MAX    10
