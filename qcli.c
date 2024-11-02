@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-09-20 16:44
+ * @ Modified time: 2024-11-02 12:03
  * @ Description:
  */
 
@@ -279,6 +279,9 @@ static int _cmd_callback(QCliInterface *cli)
 
 int qcli_init(QCliInterface *cli, QCliPrint print)
 {
+    if((cli == _QCLI_NULL) || (print == _QCLI_NULL)) {
+        return -1;
+    }
     cli->cmds.next = cli->cmds.prev = &cli->cmds;
     cli->print = print;
     cli->is_exec_str = 0;
@@ -303,6 +306,9 @@ int qcli_init(QCliInterface *cli, QCliPrint print)
 
 int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
 {
+    if((cli == _QCLI_NULL) || (cmd == _QCLI_NULL) || (callback == _QCLI_NULL)) {
+        return -1;
+    }
     cmd->name = name;
     cmd->callback = callback;
     cmd->usage = usage;
@@ -317,6 +323,9 @@ int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback ca
 
 int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 {
+    if((cli == _QCLI_NULL) || (cmd == _QCLI_NULL)) {
+        return -1;
+    }
     if(_cmd_isexist(cli, cmd) == 0) {
         _list_remove(&cmd->node);
         return 0;
@@ -327,6 +336,9 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 
 int qcli_exec(QCliInterface *cli, char c)
 {
+    if(cli == _QCLI_NULL) {
+        return -1;
+    }
     if(c == '\x1b') {
         return 0;
     }
@@ -471,7 +483,7 @@ int qcli_exec(QCliInterface *cli, char c)
 
 int qcli_exec_str(QCliInterface *cli, char *str)
 {
-    if(cli == _QCLI_NULL || str == _QCLI_NULL) {
+    if((cli == _QCLI_NULL) || (str == _QCLI_NULL)) {
         return -1;
     }
     uint16_t argc = 0;
