@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2024-11-02 12:03
+ * @ Modified time: 2025-01-01 14:09
  * @ Description:
  */
 
@@ -47,6 +47,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 
 #define QCLI_ENTRY(ptr, type, member)     ((type *)((char *)(ptr) - ((unsigned long) &((type*)0)->member)))
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
+#define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
 static void *_memcpy(void *dest, const void *src, uint32_t len)
 {
@@ -248,9 +249,10 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
 static int _cmd_callback(QCliInterface *cli)
 {
     QCliList *_node;
+    QCliList *_node_safe;
     QCliCmd *_cmd;
     int result = 0;
-    QCLI_ITERATOR(_node, &cli->cmds)
+    QCLI_ITERATOR_SAFE(_node, _node_safe, &cli->cmds)
     {
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
         if(_strcmp(cli->argv[0], _cmd->name) == 0) {
@@ -279,7 +281,7 @@ static int _cmd_callback(QCliInterface *cli)
 
 int qcli_init(QCliInterface *cli, QCliPrint print)
 {
-    if((cli == _QCLI_NULL) || (print == _QCLI_NULL)) {
+    if(cli == _QCLI_NULL || print == _QCLI_NULL) {
         return -1;
     }
     cli->cmds.next = cli->cmds.prev = &cli->cmds;
@@ -306,7 +308,7 @@ int qcli_init(QCliInterface *cli, QCliPrint print)
 
 int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
 {
-    if((cli == _QCLI_NULL) || (cmd == _QCLI_NULL) || (callback == _QCLI_NULL)) {
+    if(cli == _QCLI_NULL || cmd == _QCLI_NULL || callback == _QCLI_NULL) {
         return -1;
     }
     cmd->name = name;
@@ -323,7 +325,7 @@ int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback ca
 
 int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 {
-    if((cli == _QCLI_NULL) || (cmd == _QCLI_NULL)) {
+    if(cli == _QCLI_NULL) {
         return -1;
     }
     if(_cmd_isexist(cli, cmd) == 0) {
@@ -483,7 +485,7 @@ int qcli_exec(QCliInterface *cli, char c)
 
 int qcli_exec_str(QCliInterface *cli, char *str)
 {
-    if((cli == _QCLI_NULL) || (str == _QCLI_NULL)) {
+    if(cli == _QCLI_NULL || str == _QCLI_NULL) {
         return -1;
     }
     uint16_t argc = 0;
@@ -511,8 +513,9 @@ int qcli_exec_str(QCliInterface *cli, char *str)
         }
     }
     QCliList *_node;
+    QCliList *_node_safe;
     QCliCmd *_cmd;
-    QCLI_ITERATOR(_node, &cli->cmds)
+    QCLI_ITERATOR_SAFE(_node, _node_safe, &cli->cmds)
     {
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
         if(_strcmp(argv[0], _cmd->name) == 0) {
