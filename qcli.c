@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-01-01 14:09
+ * @ Modified time: 2025-01-21 20:52
  * @ Description:
  */
 
@@ -49,24 +49,23 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
-static void *_memcpy(void *dest, const void *src, uint32_t len)
+static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 {
-    char *d;
-    const char *s;
-    if(((char *)dest > ((char *)src + len)) || ((char *)dest < (char *)src)) {
-        d = dest;
-        s = src;
-        while(len--) {
+    char *d = (char *)dst;
+    const char *s = (const char *)src;
+
+    if (d < s) {
+        while (sz--) {
             *d++ = *s++;
         }
     } else {
-        d = (char *)((char *)dest + len - 1);
-        s = (char *)((char *)src + len - 1);
-        while(len--) {
-            *d-- = *s--;
+        d += sz;
+        s += sz;
+        while (sz--) {
+            *--d = *--s;
         }
     }
-    return dest;
+    return dst;
 }
 
 static void *_memset(void *dest, int c, uint32_t n)
