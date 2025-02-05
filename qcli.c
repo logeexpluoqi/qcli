@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-01-21 20:52
+ * @ Modified time: 2025-02-05 13:35
  * @ Description:
  */
 
@@ -117,6 +117,9 @@ static int _strcmp(const char *s1, const char *s2)
 static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 {
     uint32_t len = _strlen(s);
+    if(offset > len) {
+        return _QCLI_NULL;
+    }
     _memcpy(s + offset + size, s + offset, len - offset + 1);
     _memcpy(s + offset, c, size);
     return s;
@@ -125,6 +128,9 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 {
     uint32_t len = _strlen(s);
+    if(offset + size > len) {
+        return _QCLI_NULL;
+    }
     _memcpy(s + offset, s + offset + size, len - offset - size);
     _memset(s + len - size, 0, size);
     return s;
@@ -340,10 +346,7 @@ int qcli_exec(QCliInterface *cli, char c)
     if(cli == _QCLI_NULL) {
         return -1;
     }
-    if(c == '\x1b') {
-        return 0;
-    }
-    if(c == '\x5b') {
+    if(c == '\x1b' || c == '\x5b') {
         return 0;
     }
     if((c == _KEY_BACKSPACE) || (c == _KEY_DEL)) {
@@ -385,7 +388,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         if(_parser(cli, cli->args, cli->args_size) != 0) {
             _memset(cli->args, 0, cli->args_size);
-            _memset(&cli->argv, 0, cli->argc);
+            _memset(&cli->argv, 0, cli->argc * sizeof(char *));
             cli->args_size = 0;
             cli->args_index = 0;
             cli->argc = 0;
@@ -396,7 +399,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         _cmd_callback(cli);
         _memset(cli->args, 0, cli->args_size);
-        _memset(&cli->argv, 0, cli->argc);
+        _memset(&cli->argv, 0, cli->argc * sizeof(char *));
         cli->args_size = 0;
         cli->args_index = 0;
         cli->argc = 0;
@@ -438,7 +441,7 @@ int qcli_exec(QCliInterface *cli, char c)
             cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
         } else {
             _memset(cli->args, 0, cli->args_size);
-            _memset(&cli->argv, 0, cli->argc);
+            _memset(&cli->argv, 0, cli->argc * sizeof(char *));
             cli->args_size = 0;
             cli->args_index = 0;
             cli->argc = 0;
