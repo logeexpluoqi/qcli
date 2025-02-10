@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-05 13:35
+ * @ Modified time: 2025-02-10 10:50
  * @ Description:
  */
 
@@ -54,14 +54,14 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
     char *d = (char *)dst;
     const char *s = (const char *)src;
 
-    if (d < s) {
-        while (sz--) {
+    if(d < s) {
+        while(sz--) {
             *d++ = *s++;
         }
     } else {
         d += sz;
         s += sz;
-        while (sz--) {
+        while(sz--) {
             *--d = *--s;
         }
     }
@@ -70,15 +70,14 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 
 static void *_memset(void *dest, int c, uint32_t n)
 {
-    if((dest == _QCLI_NULL) || (n == 0)) {
+    if(dest == _QCLI_NULL) {
         return _QCLI_NULL;
-    } else {
-        char *pdest = (char *)dest;
-        while(n--) {
-            *pdest++ = c;
-        }
-        return dest;
     }
+    char *pdest = (char *)dest;
+    for(uint32_t i = 0; i < n; i++) {
+        pdest[i] = c;
+    }
+    return dest;
 }
 
 static uint32_t _strlen(const char *s)
@@ -102,16 +101,11 @@ static char *_strcpy(char *dest, const char *src)
 
 static int _strcmp(const char *s1, const char *s2)
 {
-    uint32_t i = 0;
-
-    while((*(s1 + i) != '\0') || (*(s2 + i) != '\0')) {
-        if(*(s1 + i) != *(s2 + i)) {
-            return 1;
-        } else {
-            i++;
-        }
+    while(*s1 && (*s1 == *s2)) {
+        s1++;
+        s2++;
     }
-    return 0;
+    return (*(const unsigned char *)s1) - (*(const unsigned char *)s2);
 }
 
 static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
@@ -128,11 +122,10 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 {
     uint32_t len = _strlen(s);
-    if(offset + size > len) {
+    if(offset > len || (offset + size) > len) {
         return _QCLI_NULL;
     }
-    _memcpy(s + offset, s + offset + size, len - offset - size);
-    _memset(s + len - size, 0, size);
+    _memcpy(s + offset, s + offset + size, (len - offset - size) + 1);
     return s;
 }
 
@@ -229,22 +222,21 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
     if(len > QCLI_CMD_STR_MAX) {
         return -1;
     }
-    for(uint16_t i = 0; i < len; i++) {
-        if((str[i] != _KEY_SPACE) && (i == 0)) {
-            cli->argv[cli->argc] = str;
-            cli->argc++;
-            continue;
-        }
-
-        if(str[i] == _KEY_SPACE) {
-            str[i] = 0;
-            if((str[i + 1] != _KEY_SPACE) && (str[i + 1] != 0)) {
-                cli->argv[cli->argc] = &str[i + 1];
-                if(cli->argc > QCLI_CMD_ARGC_MAX) {
+    cli->argc = 0;
+    int args = 0;
+    for(uint16_t i = 0; i <= len; i++) {
+        if(str[i] == _KEY_SPACE || str[i] == '\0') {
+            if(args) {
+                args = 0;
+                str[i] = '\0';
+            }
+        } else {
+            if(!args) {
+                if(cli->argc >= QCLI_CMD_ARGC_MAX) {
                     return -2;
-                } else {
-                    cli->argc++;
                 }
+                cli->argv[cli->argc++] = &str[i];
+                args = 1;
             }
         }
     }
@@ -367,12 +359,12 @@ int qcli_exec(QCliInterface *cli, char c)
         }
     } else if(c == _KEY_ENTER) {
         if(cli->args_size == 0) {
-            if(!cli->is_exec_str){
+            if(!cli->is_exec_str) {
                 cli->print("\r\n%s", _PERFIX);
             }
             return 0;
         } else {
-            if(!cli->is_exec_str){
+            if(!cli->is_exec_str) {
                 cli->print("\r\n");
             }
         }
@@ -405,7 +397,7 @@ int qcli_exec(QCliInterface *cli, char c)
         cli->argc = 0;
         cli->history_recall_times = 0;
         cli->history_recall_index = cli->history_index;
-        if(!cli->is_exec_str){
+        if(!cli->is_exec_str) {
             cli->print("\r\n%s", _PERFIX);
         }
     } else if(c == _KEY_UP) {
@@ -491,8 +483,8 @@ int qcli_exec_str(QCliInterface *cli, char *str)
         return -1;
     }
     uint16_t argc = 0;
-    char *argv[QCLI_CMD_ARGC_MAX + 1] = {0};
-    char args[QCLI_CMD_STR_MAX + 1] = {0};
+    char *argv[QCLI_CMD_ARGC_MAX + 1] = { 0 };
+    char args[QCLI_CMD_STR_MAX + 1] = { 0 };
     uint16_t len = _strlen(str);
     _memcpy(args, str, len);
     for(uint16_t i = 0; i < len; i++) {

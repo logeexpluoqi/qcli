@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-01-21 20:52
+ * @ Modified time: 2025-02-10 11:05
  * @ Description:
  */
 
@@ -32,7 +32,7 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 
 int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size)
 {
-    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(buf)) {
+    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(buf) || size == 0) {
         return -1;
     }
     rb->rd_index = 0;
@@ -42,33 +42,33 @@ int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size)
     rb->buf = buf;
     return 0;
 }
-
 uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 {
     if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(data)) {
-        return -1;
+        return 0;
     }
-    uint32_t wsz = 0;                               // write size
-    uint32_t wtimes = (sz + rb->sz - 1) / rb->sz;   // write times
-    uint32_t wdsz = 0;                              // writed size
-
-    for(uint32_t i = 0; i < wtimes; i++) {
-        wsz = (sz > rb->sz) ? rb->sz : sz;
-        if(rb->wr_index + wsz > rb->sz) {
-            _memcpy(rb->buf + rb->wr_index, data + wdsz, rb->sz - rb->wr_index);
-            wdsz = wdsz + (rb->sz - rb->wr_index);
-            _memcpy(rb->buf, data + wdsz, wsz - (rb->sz - rb->wr_index));
-            wdsz = wdsz + (wsz - (rb->sz - rb->wr_index));
-        } else {
-            _memcpy(rb->buf + rb->wr_index, data + wdsz, wsz);
-            wdsz = wdsz + wsz;
+    uint32_t total_written = 0;
+    while (sz > 0) {
+        if (rb->used == rb->sz) {
+            rb->rd_index = (rb->rd_index + 1) % rb->sz;
+            rb->used--;
         }
-        sz = sz - wsz;
-        rb->wr_index = (rb->wr_index + wsz) % rb->sz;
-    }
-    rb->used = (rb->used + wdsz) > rb->sz ? rb->sz : (rb->used + wdsz);
+        
+        uint32_t free_space = rb->sz - rb->used;
+        uint32_t contiguous_free = rb->sz - rb->wr_index;
+        uint32_t to_write = (sz < contiguous_free) ? sz : contiguous_free;
 
-    return wdsz;
+        if (to_write > free_space) {
+            to_write = free_space;
+        }
+        
+        _memcpy(rb->buf + rb->wr_index, data + total_written, to_write);
+        rb->wr_index = (rb->wr_index + to_write) % rb->sz;
+        rb->used += to_write;
+        total_written += to_write;
+        sz -= to_write;
+    }
+    return total_written;
 }
 
 uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz)
@@ -85,17 +85,21 @@ uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
     if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(rdata)) {
         return 0;
     }
-    sz = (sz > rb->used) ? rb->used : sz;
-
-    if(rb->rd_index + sz > rb->sz) {
-        _memcpy(rdata, rb->buf + rb->rd_index, rb->sz - rb->rd_index);
-        _memcpy(rdata + (rb->sz - rb->rd_index), rb->buf, sz - (rb->sz - rb->rd_index));
-    } else {
-        _memcpy(rdata, rb->buf + rb->rd_index, sz);
+    if(sz > rb->used) {
+        sz = rb->used;
     }
-    rb->used = rb->used - sz;
-    rb->rd_index = (rb->rd_index + sz) % rb->sz;
-    return sz;
+    
+    uint32_t total_read = 0;
+    while (sz > 0) {
+        uint32_t contiguous = rb->sz - rb->rd_index;
+        uint32_t to_read = (sz < contiguous) ? sz : contiguous;
+        _memcpy(rdata + total_read, rb->buf + rb->rd_index, to_read);
+        rb->rd_index = (rb->rd_index + to_read) % rb->sz;
+        rb->used -= to_read;
+        total_read += to_read;
+        sz -= to_read;
+    }
+    return total_read;
 }
 
 uint32_t rb_used(RingBuffer *rb)
