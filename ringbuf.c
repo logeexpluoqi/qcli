@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-10 11:05
+ * @ Modified time: 2025-02-16 22:31
  * @ Description:
  */
 
@@ -30,7 +30,7 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
     return dst;
 }
 
-int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size)
+int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size, int (*mutex_lock)(void), int (*mutex_unlock)(void))
 {
     if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(buf) || size == 0) {
         return -1;
@@ -40,12 +40,17 @@ int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size)
     rb->used = 0;
     rb->sz = size;
     rb->buf = buf;
+    rb->mutex_lock = mutex_lock;
+    rb->mutex_unlock = mutex_unlock;
     return 0;
 }
 uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 {
-    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(data)) {
+    if(!_RB_IS_VALID(rb) && !_RB_IS_VALID(data)) {
         return 0;
+    }
+    if(rb->mutex_lock && rb->mutex_unlock) {
+        rb->mutex_lock(); 
     }
     uint32_t total_written = 0;
     while (sz > 0) {
@@ -68,6 +73,9 @@ uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
         total_written += to_write;
         sz -= to_write;
     }
+    if(rb->mutex_unlock) {
+        rb->mutex_unlock();
+    }
     return total_written;
 }
 
@@ -82,8 +90,11 @@ uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 
 uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
 {
-    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(rdata)) {
+    if(!_RB_IS_VALID(rb) && !_RB_IS_VALID(rdata)) {
         return 0;
+    }
+    if(rb->mutex_lock && rb->mutex_unlock) {
+        rb->mutex_lock();
     }
     if(sz > rb->used) {
         sz = rb->used;
@@ -99,6 +110,9 @@ uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
         total_read += to_read;
         sz -= to_read;
     }
+    if(rb->mutex_unlock) {
+        rb->mutex_unlock();
+    }
     return total_read;
 }
 
@@ -107,7 +121,14 @@ uint32_t rb_used(RingBuffer *rb)
     if(!_RB_IS_VALID(rb)) {
         return 0;
     }
-    return rb->used;
+    if(rb->mutex_lock && rb->mutex_unlock) {
+        rb->mutex_lock();
+    }
+    uint32_t used = rb->used;
+    if(rb->mutex_unlock) {
+        rb->mutex_unlock();
+    }
+    return used;
 }
 
 void rb_clr(RingBuffer *rb)
@@ -115,7 +136,13 @@ void rb_clr(RingBuffer *rb)
     if(!_RB_IS_VALID(rb)) {
         return;
     }
+    if(rb->mutex_lock && rb->mutex_unlock) {
+        rb->mutex_lock();
+    }
     rb->wr_index = 0;
     rb->rd_index = 0;
     rb->used = 0;
+    if(rb->mutex_unlock) {
+        rb->mutex_unlock();
+    }
 }

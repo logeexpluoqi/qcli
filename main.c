@@ -99,7 +99,7 @@ int main()
 {
     qcli_init(&cli, printf);
 
-    rb_init(&_rb, _rb_buf, sizeof(_rb_buf));
+    rb_init(&_rb, _rb_buf, sizeof(_rb_buf), NULL, NULL);
     qcli_add(&cli, &_cmd_rb, "rb", _cmd_rb_hdl, "test ring buffer");
     int ret;
     ret = qcli_exec_str(&cli, "cmd1");
