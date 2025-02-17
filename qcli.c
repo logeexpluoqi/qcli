@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-10 10:50
+ * @ Modified time: 2025-02-17 20:38
  * @ Description:
  */
 
@@ -11,8 +11,6 @@
 static const char *_CLEAR_LINE = "\r\x1b[K";
 static const char *_PERFIX = "\\>$ ";
 static const char *_CLEAR_DISP = "\033[H\033[2J";
-
-#define _QCLI_NULL           ((void *)0)
 
 #define _KEY_BACKSPACE       '\b'
 #define _KEY_SPACE           '\x20'
@@ -51,6 +49,9 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 
 static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 {
+    if(!dst || !src) {
+        return QNULL;
+    }
     char *d = (char *)dst;
     const char *s = (const char *)src;
 
@@ -70,8 +71,8 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 
 static void *_memset(void *dest, int c, uint32_t n)
 {
-    if(dest == _QCLI_NULL) {
-        return _QCLI_NULL;
+    if(!dest) {
+        return QNULL;
     }
     char *pdest = (char *)dest;
     for(uint32_t i = 0; i < n; i++) {
@@ -82,6 +83,9 @@ static void *_memset(void *dest, int c, uint32_t n)
 
 static uint32_t _strlen(const char *s)
 {
+    if(!s) {
+        return 0;
+    }
     uint32_t len = 0;
     while(*s++ != '\0') {
         len++;
@@ -91,8 +95,8 @@ static uint32_t _strlen(const char *s)
 
 static char *_strcpy(char *dest, const char *src)
 {
-    if((dest == _QCLI_NULL) || (src == _QCLI_NULL)) {
-        return _QCLI_NULL;
+    if((!dest) || (!src)) {
+        return QNULL;
     }
     char *addr = dest;
     while((*dest++ = *src++) != '\0');
@@ -101,6 +105,9 @@ static char *_strcpy(char *dest, const char *src)
 
 static int _strcmp(const char *s1, const char *s2)
 {
+    if(!s1 || !s2) {
+        return 0;
+    }
     while(*s1 && (*s1 == *s2)) {
         s1++;
         s2++;
@@ -110,9 +117,12 @@ static int _strcmp(const char *s1, const char *s2)
 
 static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 {
+    if(!s || !c) {
+        return QNULL;
+    }
     uint32_t len = _strlen(s);
     if(offset > len) {
-        return _QCLI_NULL;
+        return QNULL;
     }
     _memcpy(s + offset + size, s + offset, len - offset + 1);
     _memcpy(s + offset, c, size);
@@ -121,9 +131,12 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 
 static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 {
+    if(!s) {
+        return QNULL;
+    }
     uint32_t len = _strlen(s);
     if(offset > len || (offset + size) > len) {
-        return _QCLI_NULL;
+        return QNULL;
     }
     _memcpy(s + offset, s + offset + size, (len - offset - size) + 1);
     return s;
@@ -131,6 +144,9 @@ static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 
 static inline void _list_insert(QCliList *list, QCliList *node)
 {
+    if(!list || !node) {
+        return;
+    }
     list->next->prev = node;
     node->next = list->next;
 
@@ -148,6 +164,9 @@ static inline void _list_remove(QCliList *node)
 
 static int _cmd_isexist(QCliInterface *cli, QCliCmd *cmd)
 {
+    if(!cli || !cmd) {
+        return -1;
+    }
     QCliCmd *_cmd;
     QCliList *_node;
 
@@ -212,6 +231,9 @@ static int _help_cb(int argc, char **argv)
 static QCliCmd _clear;
 static int _clear_cb(int argc, char **argv)
 {
+    if(!argv) {
+        return -1;
+    }
     _clear.cli->print(_CLEAR_DISP);
 
     return 0;
@@ -219,6 +241,9 @@ static int _clear_cb(int argc, char **argv)
 
 static int _parser(QCliInterface *cli, char *str, uint16_t len)
 {
+    if(!cli || !str) {
+        return -1;
+    }
     if(len > QCLI_CMD_STR_MAX) {
         return -1;
     }
@@ -245,6 +270,9 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
 
 static int _cmd_callback(QCliInterface *cli)
 {
+    if(!cli) {
+        return -1;
+    }
     QCliList *_node;
     QCliList *_node_safe;
     QCliCmd *_cmd;
@@ -278,7 +306,7 @@ static int _cmd_callback(QCliInterface *cli)
 
 int qcli_init(QCliInterface *cli, QCliPrint print)
 {
-    if(cli == _QCLI_NULL || print == _QCLI_NULL) {
+    if(!cli || !print) {
         return -1;
     }
     cli->cmds.next = cli->cmds.prev = &cli->cmds;
@@ -305,7 +333,7 @@ int qcli_init(QCliInterface *cli, QCliPrint print)
 
 int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
 {
-    if(cli == _QCLI_NULL || cmd == _QCLI_NULL || callback == _QCLI_NULL) {
+    if(!cli || !cmd || !callback) {
         return -1;
     }
     cmd->name = name;
@@ -322,7 +350,7 @@ int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback ca
 
 int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 {
-    if(cli == _QCLI_NULL) {
+    if(!cli) {
         return -1;
     }
     if(_cmd_isexist(cli, cmd) == 0) {
@@ -335,7 +363,7 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 
 int qcli_exec(QCliInterface *cli, char c)
 {
-    if(cli == _QCLI_NULL) {
+    if(!cli) {
         return -1;
     }
     if(c == '\x1b' || c == '\x5b') {
@@ -479,7 +507,7 @@ int qcli_exec(QCliInterface *cli, char c)
 
 int qcli_exec_str(QCliInterface *cli, char *str)
 {
-    if(cli == _QCLI_NULL || str == _QCLI_NULL) {
+    if(!cli || !str) {
         return -1;
     }
     uint16_t argc = 0;
