@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-16 21:18
+ * @ Modified time: 2025-02-18 22:12
  * @ Description:
  */
 
@@ -10,6 +10,10 @@
 #define _RINGBUF_H
 
 #include <stdint.h>
+
+#ifndef QNULL
+#define QNULL ((void *)0)
+#endif
 
 typedef struct 
 {

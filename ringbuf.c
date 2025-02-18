@@ -2,14 +2,11 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-16 22:31
+ * @ Modified time: 2025-02-18 22:12
  * @ Description:
  */
 
 #include "ringbuf.h"
-
-#define _RB_NULL  ((void *)0)
-#define _RB_IS_VALID(rb)  (rb != _RB_NULL)
 
 static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 {
@@ -32,7 +29,7 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
 
 int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size, int (*mutex_lock)(void), int (*mutex_unlock)(void))
 {
-    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(buf) || size == 0) {
+    if(!rb || !buf || size == 0) {
         return -1;
     }
     rb->rd_index = 0;
@@ -46,7 +43,7 @@ int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size, int (*mutex_lock)(void)
 }
 uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 {
-    if(!_RB_IS_VALID(rb) && !_RB_IS_VALID(data)) {
+    if(!rb && !data) {
         return 0;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
@@ -81,7 +78,7 @@ uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 
 uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 {
-    if(!_RB_IS_VALID(rb) || !_RB_IS_VALID(data)) {
+    if(!rb || !data) {
         return 0;
     }
     sz = sz > (rb->sz - rb->used) ? (rb->sz - rb->used) : sz;
@@ -90,7 +87,7 @@ uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 
 uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
 {
-    if(!_RB_IS_VALID(rb) && !_RB_IS_VALID(rdata)) {
+    if(!rb && !rdata) {
         return 0;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
@@ -118,7 +115,7 @@ uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
 
 uint32_t rb_used(RingBuffer *rb)
 {
-    if(!_RB_IS_VALID(rb)) {
+    if(!rb) {
         return 0;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
@@ -133,7 +130,7 @@ uint32_t rb_used(RingBuffer *rb)
 
 void rb_clr(RingBuffer *rb)
 {
-    if(!_RB_IS_VALID(rb)) {
+    if(!rb) {
         return;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
