@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-18 22:12
+ * @ Modified time: 2025-02-24 23:41
  * @ Description:
  */
 
@@ -43,7 +43,7 @@ int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size, int (*mutex_lock)(void)
 }
 uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 {
-    if(!rb && !data) {
+    if(!rb || !data) {
         return 0;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
@@ -87,7 +87,7 @@ uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz)
 
 uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz)
 {
-    if(!rb && !rdata) {
+    if(!rb || !rdata) {
         return 0;
     }
     if(rb->mutex_lock && rb->mutex_unlock) {
