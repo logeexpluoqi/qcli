@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 16:27
+ * @ Modified time: 2025-02-25 19:42
  * @ Description:
  */
 
@@ -65,6 +65,19 @@ typedef struct {
     const char *usage;
     QCliList node;
 } QCliCmd;
+
+typedef int (ArgsHandler)(int argc, char **argv);
+typedef struct {
+    const char *name;
+    int min_args;
+    int max_args;
+    ArgsHandler *handler;
+    const char *help;
+} QCliArgsEntry;
+
+QCliArgsEntry *qcli_find_args_entry(const char *name, const QCliArgsEntry *table, uint32_t sz);
+
+int qcli_args_exec(int argc, char **argv, const QCliArgsEntry *table, uint32_t sz);
 
 int qcli_init(QCliInterface *interface, QCliPrint print);
 

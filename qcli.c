@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 16:34
+ * @ Modified time: 2025-02-25 19:42
  * @ Description:
  */
 
@@ -552,4 +552,30 @@ int qcli_exec_str(QCliInterface *cli, char *str)
         }
     }
     return -4;
+}
+
+QCliArgsEntry *qcli_find_args_entry(const char *name, const QCliArgsEntry *table, uint32_t sz)
+{
+    uint32_t n = sz / (sizeof(QCliArgsEntry));
+    for(uint32_t i = 0; i < n; i++) {
+        if(_strcmp(name, table[i].name) == 0) {
+            return (QCliArgsEntry *)&table[i];
+        }
+    }
+    return QNULL;
+}
+
+int qcli_args_exec(int argc, char **argv, const QCliArgsEntry *table, uint32_t sz)
+{
+    QCliArgsEntry *entry = qcli_find_args_entry(argv[1], table, sz);
+    if(entry) {
+        if(argc < entry->min_args) {
+            return QCLI_ERR_PARAM_LESS;
+        } else if(argc > entry->max_args) {
+            return QCLI_ERR_PARAM_MORE;
+        } else {
+            return entry->handler(argc, argv);
+        }
+    }
+    return -1;
 }
