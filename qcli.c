@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 22:52
+ * @ Modified time: 2025-02-25 23:50
  * @ Description:
  */
 
@@ -116,6 +116,81 @@ static int _strcmp(const char *s1, const char *s2)
     return (*(const unsigned char *)s1) - (*(const unsigned char *)s2);
 }
 
+static int _strncmp(const char *s1, const char *s2, uint32_t n)
+{
+    if(!n) return 0;
+    if(!s1 || !s2) return -1;
+
+    // 快速处理第一个字符
+    if(*s1 != *s2) {
+        return (*(unsigned char *)s1 - *(unsigned char *)s2);
+    }
+
+    // 对于小长度字符串，直接逐字节比较
+    if(n < 8) {
+        do {
+            if(*s1 != *s2) {
+                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+            }
+            if(!*s1++) return 0;
+            s2++;
+        } while(--n);
+        return 0;
+    }
+
+    // 处理未对齐部分
+    uintptr_t s1_addr = (uintptr_t)s1;
+    uint32_t align_adj = s1_addr & (sizeof(uint32_t) - 1);
+    if(align_adj) {
+        align_adj = sizeof(uint32_t) - align_adj;
+        n -= align_adj;
+        do {
+            if(*s1 != *s2) {
+                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+            }
+            if(!*s1++) return 0;
+            s2++;
+        } while(--align_adj);
+    }
+
+    // 按机器字长进行块比较
+    uint32_t *w1 = (uint32_t *)s1;
+    uint32_t *w2 = (uint32_t *)s2;
+    uint32_t len = n / sizeof(uint32_t);
+
+    while(len--) {
+        if(*w1 != *w2) {
+            // 找出第一个不同的字节
+            s1 = (const char *)w1;
+            s2 = (const char *)w2;
+            for(uint32_t i = 0; i < sizeof(uint32_t); i++) {
+                if(s1[i] != s2[i]) {
+                    return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+                }
+                if(!s1[i]) return 0;
+            }
+        }
+        w1++;
+        w2++;
+    }
+
+    // 处理剩余字节
+    s1 = (const char *)w1;
+    s2 = (const char *)w2;
+    n &= (sizeof(uint32_t) - 1);
+    if(n) {
+        do {
+            if(*s1 != *s2) {
+                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+            }
+            if(!*s1++) return 0;
+            s2++;
+        } while(--n);
+    }
+
+    return 0;
+}
+
 static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 {
     if(!s || !c) {
@@ -180,6 +255,54 @@ static int _cmd_isexist(QCliInterface *cli, QCliCmd *cmd)
     return 0;
 }
 
+static inline void _cli_reset_buffer(QCliInterface *cli)
+{
+    _memset(cli->args, 0, cli->args_size);
+    _memset(&cli->argv, 0, cli->argc * sizeof(char *));
+    cli->args_size = 0;
+    cli->args_index = 0;
+    cli->argc = 0;
+    cli->history_recall_times = 0;
+    cli->history_recall_index = cli->history_index;
+}
+
+static void _handle_tab_complete(QCliInterface *cli)
+{
+    if(!cli || !cli->args_size) return;
+
+    char *partial = cli->args;
+    int matches = 0;
+    const char *match = QNULL;
+
+    QCliList *node;
+    QCLI_ITERATOR(node, &cli->cmds)
+    {
+        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+        if(_strncmp(partial, cmd->name, _strlen(partial)) == 0) {
+            matches++;
+            match = cmd->name;
+        }
+    }
+
+    if(matches == 1) {
+        _memset(cli->args, 0, QCLI_CMD_STR_MAX);
+        _strcpy(cli->args, match);
+        cli->args_size = _strlen(match);
+        cli->args_index = cli->args_size;
+        cli->print("\r%s%s", _PERFIX, cli->args);
+    } else if(matches > 1) {
+        cli->print("\r\n");
+        QCLI_ITERATOR(node, &cli->cmds)
+        {
+            QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+            if(_strncmp(partial, cmd->name, _strlen(partial)) == 0) {
+                cli->print("%s  ", cmd->name);
+            }
+        }
+        cli->print("\r\n%s%s", _PERFIX, cli->args);
+    }
+}
+
 static QCliCmd _history;
 static int _history_cb(int argc, char **argv)
 {
@@ -242,7 +365,7 @@ static int _clear_cb(int argc, char **argv)
 
 static int _parser(QCliInterface *cli, char *str, uint16_t len)
 {
-    if(!cli || !str) {
+    if(!cli || !str || len >= QCLI_CMD_STR_MAX) {
         return -1;
     }
     if(len > QCLI_CMD_STR_MAX) {
@@ -285,9 +408,9 @@ static int _cmd_callback(QCliInterface *cli)
             result = _cmd->callback(cli->argc, cli->argv);
             if(result == QCLI_EOK) {
                 return 0;
-            } else if(result == QCLI_ERR_PARAM_UNKONWN){
+            } else if(result == QCLI_ERR_PARAM_UNKONWN) {
                 cli->print(" #! unkown parameter !\r\n");
-            }else if(result == QCLI_ERR_PARAM) {
+            } else if(result == QCLI_ERR_PARAM) {
                 cli->print(" #! parameter error !\r\n");
             } else if(result == QCLI_ERR_PARAM_LESS) {
                 cli->print(" #! parameter less !\r\n");
@@ -370,7 +493,7 @@ int qcli_exec(QCliInterface *cli, char c)
         return -1;
     }
     if(c == '\x1b' || c == '\x5b') {
-        return 0;
+        return QCLI_EOK;
     }
     if((c == _KEY_BACKSPACE) || (c == _KEY_DEL)) {
         if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
@@ -421,13 +544,7 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
         _cmd_callback(cli);
-        _memset(cli->args, 0, cli->args_size);
-        _memset(&cli->argv, 0, cli->argc * sizeof(char *));
-        cli->args_size = 0;
-        cli->args_index = 0;
-        cli->argc = 0;
-        cli->history_recall_times = 0;
-        cli->history_recall_index = cli->history_index;
+        _cli_reset_buffer(cli);
         if(!cli->is_exec_str) {
             cli->print("\r\n%s", _PERFIX);
         }
@@ -486,9 +603,10 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
     } else if(c == _KEY_ESC) {
-
+        _cli_reset_buffer(cli);
+        cli->print("%s", _PERFIX);
     } else if(c == _KEY_TAB) {
-
+        _handle_tab_complete(cli);
     } else {
         if(cli->args_size > QCLI_CMD_STR_MAX) {
             return 0;
@@ -526,7 +644,7 @@ int qcli_exec_str(QCliInterface *cli, char *str)
         }
 
         if(args[i] == _KEY_SPACE) {
-            args[i] = 0;
+            args[i] = '\0';
             if(args[i + 1] != _KEY_SPACE) {
                 argv[argc] = &args[i + 1];
                 if(argc > QCLI_CMD_ARGC_MAX) {
@@ -556,30 +674,21 @@ int qcli_exec_str(QCliInterface *cli, char *str)
     return -4;
 }
 
-QCliArgsEntry *qcli_find_args_entry(const char *name, const QCliArgsEntry *table, uint32_t sz)
+int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table)
 {
-    uint32_t n = sz / (sizeof(QCliArgsEntry));
-    for(uint32_t i = 0; i < n; i++) {
-        if(_strcmp(name, table[i].name) == 0) {
-            return (QCliArgsEntry *)&table[i];
-        }
+    if (!table || argc < 2) {
+        return QCLI_ERR_PARAM;
     }
-    return QNULL;
-}
 
-int qcli_args_exec(int argc, char **argv, const QCliArgsEntry *table, uint32_t sz)
-{
-    QCliArgsEntry *entry = qcli_find_args_entry(argv[1], table, sz);
-    if(entry) {
-        if(argc < entry->min_args) {
-            return QCLI_ERR_PARAM_LESS;
-        } else if(argc > entry->max_args) {
-            return QCLI_ERR_PARAM_MORE;
-        } else {
+    for (const QCliArgsEntry *entry = table; entry->name != QNULL; entry++) {
+        if (_strcmp(argv[1], entry->name) == 0) {
+            if (argc < entry->min_args) {
+                return QCLI_ERR_PARAM_LESS;
+            } else if (argc > entry->max_args) {
+                return QCLI_ERR_PARAM_MORE;
+            }
             return entry->handler(argc, argv);
         }
-    } else {
-        return QCLI_ERR_PARAM_UNKONWN;
     }
-    return QCLI_ERR_PARAM;
+    return QCLI_ERR_PARAM_UNKONWN;
 }
