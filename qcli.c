@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-17 20:38
+ * @ Modified time: 2025-02-25 16:34
  * @ Description:
  */
 
@@ -11,6 +11,10 @@
 static const char *_CLEAR_LINE = "\r\x1b[K";
 static const char *_PERFIX = "\\>$ ";
 static const char *_CLEAR_DISP = "\033[H\033[2J";
+
+#ifndef UNUSED
+#define UNUSED(x) ((void)(x))
+#endif
 
 #define _KEY_BACKSPACE       '\b'
 #define _KEY_SPACE           '\x20'
@@ -83,9 +87,6 @@ static void *_memset(void *dest, int c, uint32_t n)
 
 static uint32_t _strlen(const char *s)
 {
-    if(!s) {
-        return 0;
-    }
     uint32_t len = 0;
     while(*s++ != '\0') {
         len++;
@@ -95,7 +96,7 @@ static uint32_t _strlen(const char *s)
 
 static char *_strcpy(char *dest, const char *src)
 {
-    if((!dest) || (!src)) {
+    if(!dest || !src) {
         return QNULL;
     }
     char *addr = dest;
@@ -106,7 +107,7 @@ static char *_strcpy(char *dest, const char *src)
 static int _strcmp(const char *s1, const char *s2)
 {
     if(!s1 || !s2) {
-        return 0;
+        return -1;
     }
     while(*s1 && (*s1 == *s2)) {
         s1++;
@@ -144,9 +145,6 @@ static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 
 static inline void _list_insert(QCliList *list, QCliList *node)
 {
-    if(!list || !node) {
-        return;
-    }
     list->next->prev = node;
     node->next = list->next;
 
@@ -185,6 +183,8 @@ static int _cmd_isexist(QCliInterface *cli, QCliCmd *cmd)
 static QCliCmd _history;
 static int _history_cb(int argc, char **argv)
 {
+    UNUSED(argc);
+    UNUSED(argv);
     for(uint8_t i = _history.cli->history_num; i > 0; i--) {
         _history.cli->print("%2d: %s\r\n", i, _history.cli->history[(_history.cli->history_index - i + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX]);
     }
@@ -196,6 +196,8 @@ static QCliCmd _help;
 #define QCLI_USAGE_DISP_MAX 80
 static int _help_cb(int argc, char **argv)
 {
+    UNUSED(argc);
+    UNUSED(argv);
     QCliList *_node;
     QCliCmd *_cmd;
     uint32_t j, k = 0;
@@ -231,9 +233,8 @@ static int _help_cb(int argc, char **argv)
 static QCliCmd _clear;
 static int _clear_cb(int argc, char **argv)
 {
-    if(!argv) {
-        return -1;
-    }
+    UNUSED(argc);
+    UNUSED(argv);
     _clear.cli->print(_CLEAR_DISP);
 
     return 0;
@@ -285,22 +286,22 @@ static int _cmd_callback(QCliInterface *cli)
             if(result == QCLI_EOK) {
                 return 0;
             } else if(result == QCLI_ERR_PARAM) {
-                cli->print("\r\n #! parameter error !");
+                cli->print(" #! parameter error !\r\n");
             } else if(result == QCLI_ERR_PARAM_LESS) {
-                cli->print("\r\n #! parameter less !");
+                cli->print(" #! parameter less !\r\n");
             } else if(result == QCLI_ERR_PARAM_MORE) {
-                cli->print("\r\n #! parameter more !");
+                cli->print(" #! parameter more !\r\n");
             } else if(result == QCLI_ERR_PARAM_TYPE) {
-                cli->print("\r\n #! parameter type error !");
+                cli->print(" #! parameter type error !\r\n");
             } else {
-                cli->print("\r\n #! unknown error !");
+                cli->print(" #! unknown error !\r\n");
             }
             return 0;
         } else {
             continue;
         }
     }
-    cli->print(" #! command not found !");
+    cli->print(" #! command not found !\r\n");
     return -1;
 }
 

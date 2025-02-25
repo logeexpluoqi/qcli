@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-17 20:35
+ * @ Modified time: 2025-02-25 16:27
  * @ Description:
  */
 
@@ -26,6 +26,10 @@ typedef struct _list{
 
 #define QCLI_PRINT(cli, ...)    (cli->print(__VA_ARGS__))
 
+#ifndef QNULL 
+#define QNULL ((void *)0)
+#endif
+
 typedef enum {
     QCLI_ERR_PARAM_TYPE = -4,
     QCLI_ERR_PARAM_MORE = -3,
@@ -35,10 +39,6 @@ typedef enum {
 } QCliError;
 
 typedef int (*QCliPrint)(const char *fmt, ...);
-
-#ifndef QNULL
-#define QNULL ((void *)0)
-#endif
 
 typedef struct {
     char args[QCLI_CMD_STR_MAX + 1];
