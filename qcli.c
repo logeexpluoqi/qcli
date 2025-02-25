@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 00:19
+ * @ Modified time: 2025-02-26 00:29
  * @ Description:
  */
 
@@ -810,8 +810,9 @@ int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table)
                 return QCLI_ERR_PARAM_LESS;
             } else if(argc > entry->max_args) {
                 return QCLI_ERR_PARAM_MORE;
+            } else {
+                return entry->handler(argc, argv);
             }
-            return entry->handler(argc, argv);
         }
     }
     return QCLI_ERR_PARAM_UNKONWN;
