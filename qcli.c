@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 00:29
+ * @ Modified time: 2025-02-26 01:05
  * @ Description:
  */
 
@@ -165,11 +165,27 @@ static void *_memset(void *dest, int c, uint32_t n)
 
 static uint32_t _strlen(const char *s)
 {
-    uint32_t len = 0;
-    while(*s++ != '\0') {
-        len++;
+    if(!s) return 0;
+
+    const char *start = s;
+
+    // Handle unaligned bytes first
+    while(((uintptr_t)s & (sizeof(uint32_t) - 1)) != 0) {
+        if(!*s) return s - start;
+        s++;
     }
-    return len;
+
+    // Check word at a time
+    const uint32_t *w = (const uint32_t *)s;
+    while(!(((*w) - 0x01010101UL) & ~(*w) & 0x80808080UL)) {
+        w++;
+    }
+
+    // Check remaining bytes
+    s = (const char *)w;
+    while(*s) s++;
+
+    return s - start;
 }
 
 static char *_strcpy(char *dest, const char *src)
@@ -332,28 +348,107 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
 
 static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
 {
-    if(!s || !c) {
+    if(!s || !c || !size) {
         return QNULL;
     }
+
     uint32_t len = _strlen(s);
     if(offset > len) {
         return QNULL;
     }
-    _memcpy(s + offset + size, s + offset, len - offset + 1);
-    _memcpy(s + offset, c, size);
+
+    // For large insertions, use word-aligned copies
+    if(size >= sizeof(uint32_t)) {
+        // Move the existing string first
+        uint32_t move_size = len - offset + 1;  // Include null terminator
+        if(move_size >= sizeof(uint32_t)) {
+            // Move from end to avoid overlap issues
+            uint32_t *dst = (uint32_t *)(s + len + size - (move_size & ~(sizeof(uint32_t)-1)));
+            uint32_t *src = (uint32_t *)(s + len - (move_size & ~(sizeof(uint32_t)-1)));
+            uint32_t words = move_size / sizeof(uint32_t);
+            
+            while(words--) {
+                *dst-- = *src--;
+            }
+
+            // Handle remaining bytes
+            char *d = (char *)(dst + 1);
+            char *p = (char *)(src + 1);
+            for(uint32_t i = 0; i < (move_size % sizeof(uint32_t)); i++) {
+                *--d = *--p;
+            }
+        } else {
+            // Small trailing portion, use byte copy
+            for(int32_t i = len; i >= (int32_t)offset; i--) {
+                s[i + size] = s[i];
+            }
+        }
+
+        // Insert new content using word-aligned copies where possible
+        uint32_t *dst = (uint32_t *)(s + offset);
+        uint32_t *src = (uint32_t *)c;
+        uint32_t words = size / sizeof(uint32_t);
+        
+        while(words--) {
+            *dst++ = *src++;
+        }
+
+        // Copy remaining bytes
+        char *d = (char *)dst;
+        char *p = (char *)src;
+        for(uint32_t i = 0; i < (size % sizeof(uint32_t)); i++) {
+            *d++ = *p++;
+        }
+    } else {
+        // For small insertions, use simple byte operations
+        for(int32_t i = len; i >= (int32_t)offset; i--) {
+            s[i + size] = s[i];
+        }
+        _memcpy(s + offset, c, size);
+    }
+
     return s;
 }
 
-static void *_strdelete(char *s, uint32_t offset, uint32_t size)
+static void *_strdelete(char *s, uint32_t offset, uint32_t size) 
 {
-    if(!s) {
+    if(!s || !size) {
         return QNULL;
     }
+
     uint32_t len = _strlen(s);
-    if(offset > len || (offset + size) > len) {
+    if(offset >= len) {
         return QNULL;
     }
-    _memcpy(s + offset, s + offset + size, (len - offset - size) + 1);
+
+    // Adjust size if it would exceed string length
+    if(offset + size > len) {
+        size = len - offset;
+    }
+
+    // Use word-aligned copies for large deletions
+    if(size >= sizeof(uint32_t)) {
+        uint32_t *dst = (uint32_t *)(s + offset);
+        uint32_t *src = (uint32_t *)(s + offset + size);
+        uint32_t words = (len - offset - size) / sizeof(uint32_t);
+        
+        while(words--) {
+            *dst++ = *src++;
+        }
+
+        // Copy remaining bytes
+        char *d = (char *)dst;
+        char *p = (char *)src;
+        size = (len - offset - size) % sizeof(uint32_t);
+        while(size--) {
+            *d++ = *p++;
+        }
+        *d = '\0';
+    } else {
+        // For small deletions, use simple byte copy
+        _memcpy(s + offset, s + offset + size, len - offset - size + 1);
+    }
+
     return s;
 }
 
@@ -460,36 +555,45 @@ static int _help_cb(int argc, char **argv)
 {
     UNUSED(argc);
     UNUSED(argv);
-    QCliList *_node;
-    QCliCmd *_cmd;
-    uint32_t j, k = 0;
-    int len;
+
+    // Print header
     _help.cli->print("  Commands       Usage \r\n");
     _help.cli->print(" ----------     -------\r\n");
-    QCLI_ITERATOR(_node, &_help.cli->cmds)
+
+    // Iterate through commands
+    QCliList *node;
+    QCLI_ITERATOR(node, &_help.cli->cmds)
     {
-        _cmd = QCLI_ENTRY(_node, QCliCmd, node);
-        _help.cli->print(" .%-9s     - ", _cmd->name);
-        len = _strlen(_cmd->usage);
-        if(len < QCLI_USAGE_DISP_MAX) {
-            _help.cli->print("%s\r\n", _cmd->usage);
-        } else {
-            while(len > QCLI_USAGE_DISP_MAX) {
-                k++;
-                len = len - QCLI_USAGE_DISP_MAX;
+        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+
+        // Print command name
+        _help.cli->print(" .%-9s     - ", cmd->name);
+
+        // Handle usage text
+        const char *usage = cmd->usage;
+        uint32_t remain_len = _strlen(usage);
+        uint32_t offset = 0;
+        uint8_t first_line = 1;
+
+        // Print usage text in segments
+        while(remain_len > 0) {
+            uint32_t print_len = (remain_len > QCLI_USAGE_DISP_MAX) ?
+                QCLI_USAGE_DISP_MAX : remain_len;
+
+            if(first_line) {
+                _help.cli->print("%-.*s\r\n", print_len, usage);
+                first_line = 0;
+            } else {
+                _help.cli->print("                   %-.*s\r\n",
+                    print_len, usage + offset);
             }
 
-            for(j = 0; j <= k; j++) {
-                if(j == 0) {
-                    _help.cli->print("%-80.80s\r\n", _cmd->usage + j * QCLI_USAGE_DISP_MAX);
-                } else {
-                    _help.cli->print("                   %-80.80s\r\n", _cmd->usage + j * QCLI_USAGE_DISP_MAX);
-                }
-            }
+            offset += print_len;
+            remain_len -= print_len;
         }
-        k = 0;
     }
-    return 0;
+
+    return QCLI_EOK;
 }
 
 static QCliCmd _clear;
@@ -641,14 +745,22 @@ int qcli_exec(QCliInterface *cli, char c)
 
     case _KEY_BACKSPACE:
     case _KEY_DEL:
-        if(cli->args_size > 0 && cli->args_index > 0) {
+        if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
+            cli->args_size--;
+            cli->args_index--;
+            cli->args[cli->args_size] = '\0';
+            cli->print("\b \b");
+            return 0;
+        } else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
             cli->args_size--;
             cli->args_index--;
             _strdelete(cli->args, cli->args_index, 1);
-            cli->print("\b \b");
+            cli->print(_QCLI_CUB(1));
+            cli->print(_QCLI_DCH(1));
+            return 0;
+        } else {
+            return 0;
         }
-        return 0;
-
     case _KEY_ENTER:
         if(cli->args_size == 0) {
             if(!cli->is_exec_str) {
