@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 19:42
+ * @ Modified time: 2025-02-25 22:48
  * @ Description:
  */
 
@@ -31,6 +31,7 @@ typedef struct _list{
 #endif
 
 typedef enum {
+    QCLI_ERR_PARAM_UNKONWN = -5,
     QCLI_ERR_PARAM_TYPE = -4,
     QCLI_ERR_PARAM_MORE = -3,
     QCLI_ERR_PARAM_LESS = -2,

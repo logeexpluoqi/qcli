@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 19:42
+ * @ Modified time: 2025-02-25 22:52
  * @ Description:
  */
 
@@ -285,7 +285,9 @@ static int _cmd_callback(QCliInterface *cli)
             result = _cmd->callback(cli->argc, cli->argv);
             if(result == QCLI_EOK) {
                 return 0;
-            } else if(result == QCLI_ERR_PARAM) {
+            } else if(result == QCLI_ERR_PARAM_UNKONWN){
+                cli->print(" #! unkown parameter !\r\n");
+            }else if(result == QCLI_ERR_PARAM) {
                 cli->print(" #! parameter error !\r\n");
             } else if(result == QCLI_ERR_PARAM_LESS) {
                 cli->print(" #! parameter less !\r\n");
@@ -576,6 +578,8 @@ int qcli_args_exec(int argc, char **argv, const QCliArgsEntry *table, uint32_t s
         } else {
             return entry->handler(argc, argv);
         }
+    } else {
+        return QCLI_ERR_PARAM_UNKONWN;
     }
-    return -1;
+    return QCLI_ERR_PARAM;
 }
