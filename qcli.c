@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 01:05
+ * @ Modified time: 2025-02-26 09:38
  * @ Description:
  */
 
@@ -363,10 +363,10 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
         uint32_t move_size = len - offset + 1;  // Include null terminator
         if(move_size >= sizeof(uint32_t)) {
             // Move from end to avoid overlap issues
-            uint32_t *dst = (uint32_t *)(s + len + size - (move_size & ~(sizeof(uint32_t)-1)));
-            uint32_t *src = (uint32_t *)(s + len - (move_size & ~(sizeof(uint32_t)-1)));
+            uint32_t *dst = (uint32_t *)(s + len + size - (move_size & ~(sizeof(uint32_t) - 1)));
+            uint32_t *src = (uint32_t *)(s + len - (move_size & ~(sizeof(uint32_t) - 1)));
             uint32_t words = move_size / sizeof(uint32_t);
-            
+
             while(words--) {
                 *dst-- = *src--;
             }
@@ -388,7 +388,7 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
         uint32_t *dst = (uint32_t *)(s + offset);
         uint32_t *src = (uint32_t *)c;
         uint32_t words = size / sizeof(uint32_t);
-        
+
         while(words--) {
             *dst++ = *src++;
         }
@@ -410,7 +410,7 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
     return s;
 }
 
-static void *_strdelete(char *s, uint32_t offset, uint32_t size) 
+static void *_strdelete(char *s, uint32_t offset, uint32_t size)
 {
     if(!s || !size) {
         return QNULL;
@@ -431,7 +431,7 @@ static void *_strdelete(char *s, uint32_t offset, uint32_t size)
         uint32_t *dst = (uint32_t *)(s + offset);
         uint32_t *src = (uint32_t *)(s + offset + size);
         uint32_t words = (len - offset - size) / sizeof(uint32_t);
-        
+
         while(words--) {
             *dst++ = *src++;
         }
@@ -613,25 +613,59 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
     }
 
     cli->argc = 0;
-    int args = 0;
+    char *token = str;
+    char *end = str + len;
+    char *word_start = QNULL;
+    int in_word = 0;
 
-    for(uint16_t i = 0; i < len; i++) {
-        if(str[i] == _KEY_SPACE) {
-            if(args) {
-                str[i] = '\0';
-                args = 0;
-            }
-        } else if(!args) {
-            if(cli->argc >= QCLI_CMD_ARGC_MAX) {
-                return -2;
-            }
-            cli->argv[cli->argc++] = &str[i];
-            args = 1;
-        }
+    // Ensure string ends with null terminator
+    str[len] = '\0';
+
+    // Skip leading spaces
+    while(token < end && *token == _KEY_SPACE) {
+        token++;
     }
 
-    if(args) {
-        str[len] = '\0';
+    // Return error if string only contains spaces
+    if(token >= end) {
+        return -1;
+    }
+
+    // Parse all words
+    while(token < end) {
+        if(*token == _KEY_SPACE) {
+            if(in_word) {
+                // End of word
+                *token = '\0';
+                cli->argv[cli->argc++] = word_start;
+                in_word = 0;
+                
+                // Check if argument count exceeds limit
+                if(cli->argc >= QCLI_CMD_ARGC_MAX) {
+                    return -2;
+                }
+            }
+        } else {
+            if(!in_word) {
+                // Start of word
+                word_start = token;
+                in_word = 1;
+            }
+        }
+        token++;
+    }
+
+    // Handle last word
+    if(in_word && word_start < end) {
+        if(cli->argc >= QCLI_CMD_ARGC_MAX) {
+            return -2;
+        }
+        cli->argv[cli->argc++] = word_start;
+    }
+
+    // Check if there are valid arguments
+    if(cli->argc == 0) {
+        return -1;
     }
 
     return 0;
@@ -732,45 +766,85 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
     }
 }
 
+/**
+ * @brief Processes a single character input for the CLI interface
+ * 
+ * @details This function handles various keyboard inputs including:
+ *          - Special keys (ESC, arrow keys, backspace, delete)
+ *          - Command history navigation (up/down arrows) 
+ *          - Cursor movement (left/right arrows)
+ *          - Tab completion
+ *          - Character input and editing 
+ *          - Command execution (enter key)
+ * 
+ * @param cli Pointer to QCliInterface structure containing CLI state
+ * @param c   Input character to process
+ * 
+ * @return int Returns:
+ *         - QCLI_EOK on ESC sequence
+ *         - -1 if cli pointer is invalid  
+ *         - 0 on successful processing of other characters
+ * 
+ * @note The function maintains:
+ *       - Command line buffer management
+ *       - Command history with circular buffer
+ *       - Cursor position tracking
+ *       - Command parsing and execution
+ *       - Screen output formatting
+ */
 int qcli_exec(QCliInterface *cli, char c)
 {
+    // Check for valid CLI interface
     if(!cli) {
         return -1;
     }
 
     switch(c) {
+    // Handle escape sequences
     case '\x1b':
-    case '\x5b':
+    case '\x5b': 
         return QCLI_EOK;
 
+    // Handle backspace and delete keys
     case _KEY_BACKSPACE:
     case _KEY_DEL:
+        // Delete character at end of line
         if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
             cli->args_size--;
             cli->args_index--;
             cli->args[cli->args_size] = '\0';
-            cli->print("\b \b");
+            cli->print("\b \b");  // Erase character from screen
             return 0;
-        } else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
+        }
+        // Delete character in middle of line
+        else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
             cli->args_size--;
             cli->args_index--;
             _strdelete(cli->args, cli->args_index, 1);
-            cli->print(_QCLI_CUB(1));
-            cli->print(_QCLI_DCH(1));
-            return 0;
-        } else {
+            cli->print(_QCLI_CUB(1));  // Move cursor back
+            cli->print(_QCLI_DCH(1));  // Delete character
             return 0;
         }
+        else {
+            return 0;
+        }
+
+    // Handle enter key press    
     case _KEY_ENTER:
+        // Handle empty command line
         if(cli->args_size == 0) {
             if(!cli->is_exec_str) {
                 cli->print("\r\n%s", _PERFIX);
             }
             return 0;
         }
+
+        // Print newline if not executing string
         if(!cli->is_exec_str) {
             cli->print("\r\n");
         }
+
+        // Save command to history if not "hs" command
         if(_strcmp(cli->args, "hs") != 0 && !cli->is_exec_str) {
             if(_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
                 _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
@@ -781,6 +855,8 @@ int qcli_exec(QCliInterface *cli, char c)
                 }
             }
         }
+
+        // Parse and execute command
         if(_parser(cli, cli->args, cli->args_size) != 0) {
             _cli_reset_buffer(cli);
             cli->print(" #! parse error !\r\n%s", _PERFIX);
@@ -788,11 +864,14 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         _cmd_callback(cli);
         _cli_reset_buffer(cli);
+
+        // Print prompt if not executing string
         if(!cli->is_exec_str) {
             cli->print("\r\n%s", _PERFIX);
         }
         return 0;
 
+    // Handle up arrow key - command history navigation    
     case _KEY_UP:
         if(cli->history_num == 0) {
             cli->history_recall_times = 0;
@@ -809,6 +888,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         return 0;
 
+    // Handle down arrow key - command history navigation    
     case _KEY_DOWN:
         if(cli->history_num == 0) {
             return 0;
@@ -827,6 +907,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         return 0;
 
+    // Handle left arrow key - move cursor left    
     case _KEY_LEFT:
         if(cli->args_index > 0) {
             cli->print(_QCLI_CUB(1));
@@ -834,6 +915,7 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         return 0;
 
+    // Handle right arrow key - move cursor right    
     case _KEY_RIGHT:
         if(cli->args_index < cli->args_size) {
             cli->print(_QCLI_CUF(1));
@@ -841,18 +923,24 @@ int qcli_exec(QCliInterface *cli, char c)
         }
         return 0;
 
+    // Handle tab key - command completion    
     case _KEY_TAB:
         _handle_tab_complete(cli);
         return 0;
 
+    // Handle regular character input    
     default:
+        // Check for buffer overflow
         if(cli->args_size >= QCLI_CMD_STR_MAX) {
             return 0;
         }
+        // Insert character at end of line
         if(cli->args_size == cli->args_index) {
             cli->args[cli->args_size++] = c;
             cli->args_index = cli->args_size;
-        } else {
+        }
+        // Insert character in middle of line
+        else {
             _strinsert(cli->args, cli->args_index++, &c, 1);
             cli->args_size++;
             cli->print(_QCLI_ICH(1));
@@ -867,47 +955,71 @@ int qcli_exec_str(QCliInterface *cli, char *str)
     if(!cli || !str) {
         return -1;
     }
+
+    // Local variables
     uint16_t argc = 0;
-    char *argv[QCLI_CMD_ARGC_MAX + 1] = { 0 };
-    char args[QCLI_CMD_STR_MAX + 1] = { 0 };
-    uint16_t len = _strlen(str);
+    char *argv[QCLI_CMD_ARGC_MAX] = { 0 };
+    char args[QCLI_CMD_STR_MAX] = { 0 };
+    const uint16_t len = _strlen(str);
+
+    // Validate length
+    if(len >= QCLI_CMD_STR_MAX) {
+        return -1;
+    }
+
+    // Copy input string to local buffer
     _memcpy(args, str, len);
-    for(uint16_t i = 0; i < len; i++) {
-        if((args[i] != _KEY_SPACE) && (i == 0)) {
-            argv[argc] = args;
-            argc++;
-            continue;
+    args[len] = '\0';
+
+    // Parse arguments
+    char *token = args;
+    char *end = args + len;
+
+    // Skip leading spaces
+    while(token < end && *token == _KEY_SPACE) {
+        token++;
+    }
+
+    // Parse each token
+    while(token < end) {
+        // Add token to argv
+        if(argc >= QCLI_CMD_ARGC_MAX) {
+            return -2;
+        }
+        argv[argc++] = token;
+
+        // Find end of current token
+        while(token < end && *token != _KEY_SPACE) {
+            token++;
         }
 
-        if(args[i] == _KEY_SPACE) {
-            args[i] = '\0';
-            if(args[i + 1] != _KEY_SPACE) {
-                argv[argc] = &args[i + 1];
-                if(argc > QCLI_CMD_ARGC_MAX) {
-                    return -2;
-                } else {
-                    argc++;
-                }
+        // Replace space with null terminator
+        if(token < end) {
+            *token++ = '\0';
+            // Skip consecutive spaces
+            while(token < end && *token == _KEY_SPACE) {
+                token++;
             }
         }
     }
-    QCliList *_node;
-    QCliList *_node_safe;
-    QCliCmd *_cmd;
-    QCLI_ITERATOR_SAFE(_node, _node_safe, &cli->cmds)
-    {
-        _cmd = QCLI_ENTRY(_node, QCliCmd, node);
-        if(_strcmp(argv[0], _cmd->name) == 0) {
-            if(_cmd->callback(argc, argv) != 0) {
-                return -3;
-            } else {
-                return 0;
-            }
-        } else {
-            continue;
+
+    // Handle empty input
+    if(argc == 0) {
+        return -1;
+    }
+
+    // Execute command
+    QCliList *node;
+    QCliList *node_safe;
+    QCliCmd *cmd;
+    QCLI_ITERATOR_SAFE(node, node_safe, &cli->cmds) {
+        cmd = QCLI_ENTRY(node, QCliCmd, node);
+        if(_strcmp(argv[0], cmd->name) == 0) {
+            return cmd->callback(argc, argv);
         }
     }
-    return -4;
+
+    return -4; // Command not found
 }
 
 int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table)
