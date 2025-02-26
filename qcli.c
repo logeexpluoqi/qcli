@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 09:38
+ * @ Modified time: 2025-02-26 10:49
  * @ Description:
  */
 
@@ -1022,22 +1022,25 @@ int qcli_exec_str(QCliInterface *cli, char *str)
     return -4; // Command not found
 }
 
-int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table)
+int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size)
 {
     if(!table || argc < 2) {
         return QCLI_ERR_PARAM;
     }
 
-    for(const QCliArgsEntry *entry = table; entry->name != QNULL; entry++) {
-        if(_strcmp(argv[1], entry->name) == 0) {
-            if(argc < entry->min_args) {
+    uint32_t n = table_size / sizeof(QCliArgsEntry);
+
+    for(uint32_t i = 0; i < n; i++) {
+        if(_strcmp(table[i].name, argv[1]) == 0) {
+            if(argc < table[i].min_args) {
                 return QCLI_ERR_PARAM_LESS;
-            } else if(argc > entry->max_args) {
+            } else if(argc > table[i].max_args) {
                 return QCLI_ERR_PARAM_MORE;
             } else {
-                return entry->handler(argc, argv);
+                return table[i].handler(argc, argv);
             }
         }
     }
+
     return QCLI_ERR_PARAM_UNKONWN;
 }
