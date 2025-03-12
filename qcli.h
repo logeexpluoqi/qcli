@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-25 23:47
+ * @ Modified time: 2025-02-26 10:49
  * @ Description:
  */
 
@@ -77,7 +77,7 @@ typedef struct {
     const char *help;
 } QCliArgsEntry;
 
-int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table);
+int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size);
 
 int qcli_init(QCliInterface *interface, QCliPrint print);
 
