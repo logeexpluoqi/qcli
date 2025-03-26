@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 10:49
+ * @ Modified time: 2025-03-26 16:56
  * @ Description:
  */
 
@@ -53,6 +53,7 @@ typedef struct {
     uint8_t history_index;
     uint8_t history_recall_index;
     uint8_t history_recall_times;
+    uint8_t esc_state;
     int argc;
     QCliPrint print;
     QCliList cmds;

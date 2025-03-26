@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-26 10:49
+ * @ Modified time: 2025-03-26 16:56
  * @ Description:
  */
 
@@ -639,7 +639,7 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
                 *token = '\0';
                 cli->argv[cli->argc++] = word_start;
                 in_word = 0;
-                
+
                 // Check if argument count exceeds limit
                 if(cli->argc >= QCLI_CMD_ARGC_MAX) {
                     return -2;
@@ -768,23 +768,23 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
 
 /**
  * @brief Processes a single character input for the CLI interface
- * 
+ *
  * @details This function handles various keyboard inputs including:
  *          - Special keys (ESC, arrow keys, backspace, delete)
- *          - Command history navigation (up/down arrows) 
+ *          - Command history navigation (up/down arrows)
  *          - Cursor movement (left/right arrows)
  *          - Tab completion
- *          - Character input and editing 
+ *          - Character input and editing
  *          - Command execution (enter key)
- * 
+ *
  * @param cli Pointer to QCliInterface structure containing CLI state
  * @param c   Input character to process
- * 
+ *
  * @return int Returns:
  *         - QCLI_EOK on ESC sequence
- *         - -1 if cli pointer is invalid  
+ *         - -1 if cli pointer is invalid
  *         - 0 on successful processing of other characters
- * 
+ *
  * @note The function maintains:
  *       - Command line buffer management
  *       - Command history with circular buffer
@@ -799,39 +799,103 @@ int qcli_exec(QCliInterface *cli, char c)
         return -1;
     }
 
-    switch(c) {
-    // Handle escape sequences
-    case '\x1b':
-    case '\x5b': 
-        return QCLI_EOK;
+    // Handle escape sequence state machine
+    if(cli->esc_state > 0) {
+        if(cli->esc_state == 1 && c == '\x5b') {
+            // Transition to state 2 (waiting for specific key code)
+            cli->esc_state = 2;
+            return 0;
+        } else if(cli->esc_state == 2) {
+            // Handle specific key codes
+            switch(c) {
+            case 'A': // Up arrow
+                cli->esc_state = 0; // Reset state
+                if(cli->history_num == 0) {
+                    cli->history_recall_times = 0;
+                    return 0;
+                }
+                if(cli->history_recall_times < cli->history_num) {
+                    cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
+                    _memset(cli->args, 0, cli->args_size);
+                    cli->args_size = _strlen(cli->history[cli->history_recall_index]);
+                    cli->args_index = cli->args_size;
+                    _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
+                    cli->history_recall_times++;
+                    cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
+                }
+                return 0;
+            case 'B': // Down arrow
+                cli->esc_state = 0; // Reset state
+                if(cli->history_num == 0) {
+                    return 0;
+                }
+                if(cli->history_recall_times > 1) {
+                    cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
+                    _memset(cli->args, 0, cli->args_size);
+                    cli->args_size = _strlen(cli->history[cli->history_recall_index]);
+                    cli->args_index = cli->args_size;
+                    _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
+                    cli->history_recall_times--;
+                    cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
+                } else {
+                    _cli_reset_buffer(cli);
+                    cli->print("%s%s", _CLEAR_LINE, _PERFIX);
+                }
+                return 0;
+            case 'C': // Right arrow
+                cli->esc_state = 0; // Reset state
+                if(cli->args_index < cli->args_size) {
+                    cli->print(_QCLI_CUF(1));
+                    cli->args_index++;
+                }
+                return 0;
+            case 'D': // Left arrow
+                cli->esc_state = 0; // Reset state
+                if(cli->args_index > 0) {
+                    cli->print(_QCLI_CUB(1));
+                    cli->args_index--;
+                }
+                return 0;
+            default:
+                // Unknown sequence, reset state
+                cli->esc_state = 0;
+                return 0;
+            }
+        } else {
+            // Invalid state, reset
+            cli->esc_state = 0;
+            return 0;
+        }
+    }
 
-    // Handle backspace and delete keys
+    // Handle regular input
+    switch(c) {
+    case '\x1b': // Start of escape sequence
+        cli->esc_state = 1;
+        return 0;
+
     case _KEY_BACKSPACE:
     case _KEY_DEL:
-        // Delete character at end of line
+        // Handle backspace and delete keys
         if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
             cli->args_size--;
             cli->args_index--;
             cli->args[cli->args_size] = '\0';
-            cli->print("\b \b");  // Erase character from screen
+            cli->print("\b \b"); // Erase character from screen
             return 0;
-        }
-        // Delete character in middle of line
-        else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
+        } else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
             cli->args_size--;
             cli->args_index--;
             _strdelete(cli->args, cli->args_index, 1);
-            cli->print(_QCLI_CUB(1));  // Move cursor back
-            cli->print(_QCLI_DCH(1));  // Delete character
+            cli->print(_QCLI_CUB(1)); // Move cursor back
+            cli->print(_QCLI_DCH(1)); // Delete character
             return 0;
-        }
-        else {
+        } else {
             return 0;
         }
 
-    // Handle enter key press    
     case _KEY_ENTER:
-        // Handle empty command line
+        // Handle enter key press
         if(cli->args_size == 0) {
             if(!cli->is_exec_str) {
                 cli->print("\r\n%s", _PERFIX);
@@ -839,12 +903,10 @@ int qcli_exec(QCliInterface *cli, char c)
             return 0;
         }
 
-        // Print newline if not executing string
         if(!cli->is_exec_str) {
             cli->print("\r\n");
         }
 
-        // Save command to history if not "hs" command
         if(_strcmp(cli->args, "hs") != 0 && !cli->is_exec_str) {
             if(_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
                 _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
@@ -856,7 +918,6 @@ int qcli_exec(QCliInterface *cli, char c)
             }
         }
 
-        // Parse and execute command
         if(_parser(cli, cli->args, cli->args_size) != 0) {
             _cli_reset_buffer(cli);
             cli->print(" #! parse error !\r\n%s", _PERFIX);
@@ -865,82 +926,23 @@ int qcli_exec(QCliInterface *cli, char c)
         _cmd_callback(cli);
         _cli_reset_buffer(cli);
 
-        // Print prompt if not executing string
         if(!cli->is_exec_str) {
             cli->print("\r\n%s", _PERFIX);
         }
         return 0;
-
-    // Handle up arrow key - command history navigation    
-    case _KEY_UP:
-        if(cli->history_num == 0) {
-            cli->history_recall_times = 0;
-            return 0;
-        }
-        if(cli->history_recall_times < cli->history_num) {
-            cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
-            _memset(cli->args, 0, cli->args_size);
-            cli->args_size = _strlen(cli->history[cli->history_recall_index]);
-            cli->args_index = cli->args_size;
-            _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
-            cli->history_recall_times++;
-            cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
-        }
-        return 0;
-
-    // Handle down arrow key - command history navigation    
-    case _KEY_DOWN:
-        if(cli->history_num == 0) {
-            return 0;
-        }
-        if(cli->history_recall_times > 1) {
-            cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
-            _memset(cli->args, 0, cli->args_size);
-            cli->args_size = _strlen(cli->history[cli->history_recall_index]);
-            cli->args_index = cli->args_size;
-            _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
-            cli->history_recall_times--;
-            cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
-        } else {
-            _cli_reset_buffer(cli);
-            cli->print("%s%s", _CLEAR_LINE, _PERFIX);
-        }
-        return 0;
-
-    // Handle left arrow key - move cursor left    
-    case _KEY_LEFT:
-        if(cli->args_index > 0) {
-            cli->print(_QCLI_CUB(1));
-            cli->args_index--;
-        }
-        return 0;
-
-    // Handle right arrow key - move cursor right    
-    case _KEY_RIGHT:
-        if(cli->args_index < cli->args_size) {
-            cli->print(_QCLI_CUF(1));
-            cli->args_index++;
-        }
-        return 0;
-
-    // Handle tab key - command completion    
+        
     case _KEY_TAB:
         _handle_tab_complete(cli);
         return 0;
 
-    // Handle regular character input    
     default:
-        // Check for buffer overflow
         if(cli->args_size >= QCLI_CMD_STR_MAX) {
             return 0;
         }
-        // Insert character at end of line
         if(cli->args_size == cli->args_index) {
             cli->args[cli->args_size++] = c;
             cli->args_index = cli->args_size;
-        }
-        // Insert character in middle of line
-        else {
+        } else {
             _strinsert(cli->args, cli->args_index++, &c, 1);
             cli->args_size++;
             cli->print(_QCLI_ICH(1));
