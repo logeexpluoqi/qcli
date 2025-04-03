@@ -41,7 +41,6 @@ typedef enum {
 
 typedef int (*QCliPrint)(const char *fmt, ...);
 
-
 typedef struct {
     char args[QCLI_CMD_STR_MAX + 1];
     char *argv[QCLI_CMD_ARGC_MAX + 1];
@@ -57,12 +56,12 @@ typedef struct {
     int argc;
     QCliPrint print;
     QCliList cmds;
-} QCliInterface;
+} QCliObj;
 
 typedef int (*QCliCallback)(int, char **);
 
 typedef struct {
-    QCliInterface *cli;
+    QCliObj *cli;
     const char *name;
     QCliCallback callback;
     const char *usage;
@@ -80,15 +79,15 @@ typedef struct {
 
 int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size);
 
-int qcli_init(QCliInterface *interface, QCliPrint print);
+int qcli_init(QCliObj *cli, QCliPrint print);
 
-int qcli_add(QCliInterface *interface, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage);
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage);
 
-int qcli_remove(QCliInterface *interface, QCliCmd *cmd);
+int qcli_remove(QCliObj *cli, QCliCmd *cmd);
 
-int qcli_exec(QCliInterface *interface, char c);
+int qcli_exec(QCliObj *cli, char c);
 
-int qcli_exec_str(QCliInterface *interface, char *str);
+int qcli_exec_str(QCliObj *cli, char *str);
 
 #ifdef __cplusplus
 }

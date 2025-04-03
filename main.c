@@ -15,7 +15,7 @@
 #include "qcli.h"
 #include "ringbuf.h"
 
-static QCliInterface cli;
+static QCliObj cli;
 
 #define ISARG(arg, str) (strcmp((arg), (str)) == 0)
 #define QSH(...)    cli.print(__VA_ARGS__)

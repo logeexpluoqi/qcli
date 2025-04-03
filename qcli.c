@@ -469,7 +469,7 @@ static inline void _list_remove(QCliList *node)
     node->next = node->prev = node;
 }
 
-static int _cmd_isexist(QCliInterface *cli, QCliCmd *cmd)
+static int _cmd_isexist(QCliObj *cli, QCliCmd *cmd)
 {
     if(!cli || !cmd) {
         return -1;
@@ -489,7 +489,7 @@ static int _cmd_isexist(QCliInterface *cli, QCliCmd *cmd)
     return 0;
 }
 
-static inline void _cli_reset_buffer(QCliInterface *cli)
+static inline void _cli_reset_buffer(QCliObj *cli)
 {
     _memset(cli->args, 0, cli->args_size);
     _memset(&cli->argv, 0, cli->argc * sizeof(char *));
@@ -500,7 +500,7 @@ static inline void _cli_reset_buffer(QCliInterface *cli)
     cli->history_recall_index = cli->history_index;
 }
 
-static void _handle_tab_complete(QCliInterface *cli)
+static void _handle_tab_complete(QCliObj *cli)
 {
     if(!cli || !cli->args_size) return;
 
@@ -606,7 +606,7 @@ static int _clear_cb(int argc, char **argv)
     return 0;
 }
 
-static int _parser(QCliInterface *cli, char *str, uint16_t len)
+static int _parser(QCliObj *cli, char *str, uint16_t len)
 {
     if(!cli || !str || len >= QCLI_CMD_STR_MAX) {
         return -1;
@@ -671,7 +671,7 @@ static int _parser(QCliInterface *cli, char *str, uint16_t len)
     return 0;
 }
 
-static int _cmd_callback(QCliInterface *cli)
+static int _cmd_callback(QCliObj *cli)
 {
     if(!cli) {
         return -1;
@@ -709,7 +709,7 @@ static int _cmd_callback(QCliInterface *cli)
     return -1;
 }
 
-int qcli_init(QCliInterface *cli, QCliPrint print)
+int qcli_init(QCliObj *cli, QCliPrint print)
 {
     if(!cli || !print) {
         return -1;
@@ -736,7 +736,7 @@ int qcli_init(QCliInterface *cli, QCliPrint print)
     return 0;
 }
 
-int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
 {
     if(!cli || !cmd || !callback) {
         return -1;
@@ -753,7 +753,7 @@ int qcli_add(QCliInterface *cli, QCliCmd *cmd, const char *name, QCliCallback ca
     }
 }
 
-int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
+int qcli_remove(QCliObj *cli, QCliCmd *cmd)
 {
     if(!cli) {
         return -1;
@@ -777,7 +777,7 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
  *          - Character input and editing
  *          - Command execution (enter key)
  *
- * @param cli Pointer to QCliInterface structure containing CLI state
+ * @param cli Pointer to QCliObj structure containing CLI state
  * @param c   Input character to process
  *
  * @return int Returns:
@@ -792,7 +792,7 @@ int qcli_remove(QCliInterface *cli, QCliCmd *cmd)
  *       - Command parsing and execution
  *       - Screen output formatting
  */
-int qcli_exec(QCliInterface *cli, char c)
+int qcli_exec(QCliObj *cli, char c)
 {
     // Check for valid CLI interface
     if(!cli) {
@@ -952,7 +952,7 @@ int qcli_exec(QCliInterface *cli, char c)
     }
 }
 
-int qcli_exec_str(QCliInterface *cli, char *str)
+int qcli_exec_str(QCliObj *cli, char *str)
 {
     if(!cli || !str) {
         return -1;
