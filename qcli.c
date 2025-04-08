@@ -1032,6 +1032,8 @@ int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t
 
     uint32_t n = table_size / sizeof(QCliArgsEntry);
 
+    argc -= 1;
+
     for(uint32_t i = 0; i < n; i++) {
         if(_strcmp(table[i].name, argv[1]) == 0) {
             if(argc < table[i].min_args) {
@@ -1039,7 +1041,7 @@ int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t
             } else if(argc > table[i].max_args) {
                 return QCLI_ERR_PARAM_MORE;
             } else {
-                return table[i].handler(argc, argv);
+                return table[i].handler(argc, argv + 1);
             }
         }
     }
