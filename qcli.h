@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-03-26 16:56
+ * @ Modified time: 2025-04-09 18:06
  * @ Description:
  */
 
@@ -20,9 +20,17 @@ typedef struct _list{
     struct _list *next;
 } QCliList;
 
-#define QCLI_HISTORY_MAX    10
-#define QCLI_CMD_STR_MAX    60
-#define QCLI_CMD_ARGC_MAX   10
+#ifndef QCLI_HISTORY_MAX
+#define QCLI_HISTORY_MAX    15
+#endif
+
+#ifndef QCLI_CMD_STR_MAX
+#define QCLI_CMD_STR_MAX    75
+#endif
+
+#ifndef QCLI_CMD_ARGC_MAX
+#define QCLI_CMD_ARGC_MAX   15
+#endif
 
 #define QCLI_PRINT(cli, ...)    (cli->print(__VA_ARGS__))
 
@@ -52,7 +60,7 @@ typedef struct {
     uint8_t history_index;
     uint8_t history_recall_index;
     uint8_t history_recall_times;
-    uint8_t esc_state;
+    uint8_t spacial_key;
     int argc;
     QCliPrint print;
     QCliList cmds;
@@ -84,6 +92,8 @@ int qcli_init(QCliObj *cli, QCliPrint print);
 int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage);
 
 int qcli_remove(QCliObj *cli, QCliCmd *cmd);
+
+QCliCmd *qcli_find(QCliObj *cli, const char *name);
 
 int qcli_exec(QCliObj *cli, char c);
 

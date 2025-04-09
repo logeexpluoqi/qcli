@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-03-26 16:56
+ * @ Modified time: 2025-04-09 18:06
  * @ Description:
  */
 
@@ -21,12 +21,20 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _KEY_ENTER           '\r'
 #define _KEY_ESC             '\x1b'
 #define _KEY_TAB             '\t'
+
+#ifdef _WIN32
+#define _KEY_UP              '\x48'
+#define _KEY_DOWN            '\x50'
+#define _KEY_RIGHT           '\x4d'
+#define _KEY_LEFT            '\x4b'
+#else
 #define _KEY_UP              '\x41'
 #define _KEY_DOWN            '\x42'
 #define _KEY_RIGHT           '\x43'
 #define _KEY_LEFT            '\x44'
-#define _KEY_DEL             '\x7f'
+#endif
 
+#define _KEY_DEL             '\x7f'
 #define _QCLI_SU(n)             "\033["#n"S"   // scroll up
 #define _QCLI_SD(n)             "\033["#n"T"   // scroll down
 #define _QCLI_CUU(n)            "\033["#n"A"   // cursor up
@@ -47,7 +55,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _QCLI_CSAP_BBAR         "\033[5SPq"    // cursor shape blinking bar
 #define _QCLI_CSAP_SBAR         "\033[6SPq"    // cursor shape steady bar
 
-#define QCLI_ENTRY(ptr, type, member)     ((type *)((char *)(ptr) - ((unsigned long) &((type*)0)->member)))
+#define QCLI_ENTRY(ptr, type, member)     ((type *)((char *)(ptr) - (uintptr_t)&((type*)0)->member))
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
@@ -57,8 +65,8 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
         return QNULL;
     }
 
-    unsigned char *d = (unsigned char *)dst;
-    const unsigned char *s = (const unsigned char *)src;
+    uint8_t *d = (uint8_t *)dst;
+    const uint8_t *s = (const uint8_t *)src;
 
     // Handle small copies byte by byte
     if(sz < sizeof(uint32_t)) {
@@ -72,50 +80,24 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
         return dst;
     }
 
-    // Forward copy
-    if(d < s) {
-        // Align destination to word boundary
-        while(((uintptr_t)d & (sizeof(uint32_t) - 1)) != 0) {
-            *d++ = *s++;
-            sz--;
-        }
-
-        // Copy words at a time
-        uint32_t *dw = (uint32_t *)d;
-        const uint32_t *sw = (const uint32_t *)s;
-        for(; sz >= sizeof(uint32_t); sz -= sizeof(uint32_t)) {
-            *dw++ = *sw++;
-        }
-
-        // Copy remaining bytes
-        d = (unsigned char *)dw;
-        s = (const unsigned char *)sw;
-        while(sz--) *d++ = *s++;
+    // Align destination to word boundary
+    while(((uintptr_t)d & (sizeof(uint32_t) - 1)) != 0) {
+        *d++ = *s++;
+        sz--;
     }
-    // Backward copy
-    else {
-        d += sz;
-        s += sz;
 
-        // Copy remaining bytes until word aligned
-        while(sz && ((uintptr_t)(d - 1) & (sizeof(uint32_t) - 1))) {
-            *--d = *--s;
-            sz--;
-        }
-
-        // Copy words at a time
-        uint32_t *dw = (uint32_t *)d;
-        const uint32_t *sw = (const uint32_t *)s;
-        while(sz >= sizeof(uint32_t)) {
-            *(--dw) = *(--sw);
-            sz -= sizeof(uint32_t);
-        }
-
-        // Copy remaining bytes
-        d = (unsigned char *)dw;
-        s = (const unsigned char *)sw;
-        while(sz--) *--d = *--s;
+    // Copy words at a time
+    uint32_t *dw = (uint32_t *)d;
+    const uint32_t *sw = (const uint32_t *)s;
+    while(sz >= sizeof(uint32_t)) {
+        *dw++ = *sw++;
+        sz -= sizeof(uint32_t);
     }
+
+    // Copy remaining bytes
+    d = (uint8_t *)dw;
+    s = (const uint8_t *)sw;
+    while(sz--) *d++ = *s++;
 
     return dst;
 }
@@ -126,8 +108,8 @@ static void *_memset(void *dest, int c, uint32_t n)
         return QNULL;
     }
 
-    unsigned char *pdest = (unsigned char *)dest;
-    unsigned char byte = (unsigned char)c;
+    uint8_t *pdest = (uint8_t *)dest;
+    uint8_t byte = (uint8_t)c;
 
     // Handle small sizes byte by byte
     if(n < sizeof(uint32_t)) {
@@ -155,7 +137,7 @@ static void *_memset(void *dest, int c, uint32_t n)
     }
 
     // Fill remaining bytes
-    pdest = (unsigned char *)pdest_w;
+    pdest = (uint8_t *)pdest_w;
     while(n--) {
         *pdest++ = byte;
     }
@@ -231,7 +213,7 @@ static int _strcmp(const char *s1, const char *s2)
 
     // Quick check for first character
     if(*s1 != *s2) {
-        return (*(unsigned char *)s1 - *(unsigned char *)s2);
+        return (*(uint8_t *)s1 - *(uint8_t *)s2);
     }
 
     // For short strings, use byte-by-byte comparison
@@ -240,13 +222,13 @@ static int _strcmp(const char *s1, const char *s2)
             s1++;
             s2++;
         }
-        return (*(unsigned char *)s1 - *(unsigned char *)s2);
+        return (*(uint8_t *)s1 - *(uint8_t *)s2);
     }
 
     // Align to word boundary
     while(((uintptr_t)s1 & (sizeof(uint32_t) - 1)) != 0) {
         if(*s1 != *s2) {
-            return (*(unsigned char *)s1 - *(unsigned char *)s2);
+            return (*(uint8_t *)s1 - *(uint8_t *)s2);
         }
         if(!*s1) return 0;
         s1++;
@@ -274,7 +256,7 @@ static int _strcmp(const char *s1, const char *s2)
         s1++;
         s2++;
     }
-    return (*(unsigned char *)s1 - *(unsigned char *)s2);
+    return (*(uint8_t *)s1 - *(uint8_t *)s2);
 }
 
 static int _strncmp(const char *s1, const char *s2, uint32_t n)
@@ -283,13 +265,13 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
     if(!s1 || !s2) return -1;
 
     if(*s1 != *s2) {
-        return (*(unsigned char *)s1 - *(unsigned char *)s2);
+        return (*(uint8_t *)s1 - *(uint8_t *)s2);
     }
 
     if(n < 8) {
         do {
             if(*s1 != *s2) {
-                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+                return (*(uint8_t *)s1 - *(uint8_t *)s2);
             }
             if(!*s1++) return 0;
             s2++;
@@ -304,7 +286,7 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
         n -= align_adj;
         do {
             if(*s1 != *s2) {
-                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+                return (*(uint8_t *)s1 - *(uint8_t *)s2);
             }
             if(!*s1++) return 0;
             s2++;
@@ -321,7 +303,7 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
             s2 = (const char *)w2;
             for(uint32_t i = 0; i < sizeof(uint32_t); i++) {
                 if(s1[i] != s2[i]) {
-                    return ((unsigned char)s1[i] - (unsigned char)s2[i]);
+                    return ((uint8_t)s1[i] - (uint8_t)s2[i]);
                 }
                 if(!s1[i]) return 0;
             }
@@ -336,7 +318,7 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
     if(n) {
         do {
             if(*s1 != *s2) {
-                return (*(unsigned char *)s1 - *(unsigned char *)s2);
+                return (*(uint8_t *)s1 - *(uint8_t *)s2);
             }
             if(!*s1++) return 0;
             s2++;
@@ -744,7 +726,7 @@ int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback
     cmd->name = name;
     cmd->callback = callback;
     cmd->usage = usage;
-    if(_cmd_isexist(cli, cmd) == 0) {
+    if(!_cmd_isexist(cli, cmd)) {
         _list_insert(&cli->cmds, &cmd->node);
         cmd->cli = cli;
         return 0;
@@ -766,189 +748,158 @@ int qcli_remove(QCliObj *cli, QCliCmd *cmd)
     }
 }
 
-/**
- * @brief Processes a single character input for the CLI interface
- *
- * @details This function handles various keyboard inputs including:
- *          - Special keys (ESC, arrow keys, backspace, delete)
- *          - Command history navigation (up/down arrows)
- *          - Cursor movement (left/right arrows)
- *          - Tab completion
- *          - Character input and editing
- *          - Command execution (enter key)
- *
- * @param cli Pointer to QCliObj structure containing CLI state
- * @param c   Input character to process
- *
- * @return int Returns:
- *         - QCLI_EOK on ESC sequence
- *         - -1 if cli pointer is invalid
- *         - 0 on successful processing of other characters
- *
- * @note The function maintains:
- *       - Command line buffer management
- *       - Command history with circular buffer
- *       - Cursor position tracking
- *       - Command parsing and execution
- *       - Screen output formatting
- */
+static void _history_navigation(QCliObj *cli, int direction)
+{
+    if (cli->history_num == 0) {
+        cli->history_recall_times = 0;
+        return;
+    }
+
+    if (direction == -1 && cli->history_recall_times < cli->history_num) { // _KEY_UP
+        cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
+        cli->history_recall_times++;
+    } else if (direction == 1 && cli->history_recall_times > 1) { // _KEY_DOWN
+        cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
+        cli->history_recall_times--;
+    } else {
+        _cli_reset_buffer(cli);
+        cli->print("%s%s", _CLEAR_LINE, _PERFIX);
+        return;
+    }
+
+    _memset(cli->args, 0, cli->args_size);
+    cli->args_size = _strlen(cli->history[cli->history_recall_index]);
+    cli->args_index = cli->args_size;
+    _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
+    cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
+}
+
+static void _special_key(QCliObj *cli, char c)
+{
+    switch (c) {
+        case _KEY_UP:
+            _history_navigation(cli, -1);
+            break;
+        case _KEY_DOWN:
+            _history_navigation(cli, 1);
+            break;
+        case _KEY_RIGHT:
+            if (cli->args_index < cli->args_size) {
+                cli->print(_QCLI_CUF(1));
+                cli->args_index++;
+            }
+            break;
+        case _KEY_LEFT:
+            if (cli->args_index > 0) {
+                cli->print(_QCLI_CUB(1));
+                cli->args_index--;
+            }
+            break;
+        default:
+            break;
+    }
+    cli->spacial_key = 0;
+}
+
 int qcli_exec(QCliObj *cli, char c)
 {
-    // Check for valid CLI interface
-    if(!cli) {
+    if (!cli) {
         return -1;
     }
 
-    // Handle escape sequence state machine
-    if(cli->esc_state > 0) {
-        if(cli->esc_state == 1 && c == '\x5b') {
-            // Transition to state 2 (waiting for specific key code)
-            cli->esc_state = 2;
+    if (cli->spacial_key > 0) {
+        if (cli->spacial_key == 1 && c == '\x5b') {
+            cli->spacial_key = 2;
             return 0;
-        } else if(cli->esc_state == 2) {
-            // Handle specific key codes
-            switch(c) {
-            case 'A': // Up arrow
-                cli->esc_state = 0; // Reset state
-                if(cli->history_num == 0) {
-                    cli->history_recall_times = 0;
-                    return 0;
-                }
-                if(cli->history_recall_times < cli->history_num) {
-                    cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
-                    _memset(cli->args, 0, cli->args_size);
-                    cli->args_size = _strlen(cli->history[cli->history_recall_index]);
-                    cli->args_index = cli->args_size;
-                    _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
-                    cli->history_recall_times++;
-                    cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
-                }
-                return 0;
-            case 'B': // Down arrow
-                cli->esc_state = 0; // Reset state
-                if(cli->history_num == 0) {
-                    return 0;
-                }
-                if(cli->history_recall_times > 1) {
-                    cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
-                    _memset(cli->args, 0, cli->args_size);
-                    cli->args_size = _strlen(cli->history[cli->history_recall_index]);
-                    cli->args_index = cli->args_size;
-                    _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
-                    cli->history_recall_times--;
-                    cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
-                } else {
-                    _cli_reset_buffer(cli);
-                    cli->print("%s%s", _CLEAR_LINE, _PERFIX);
-                }
-                return 0;
-            case 'C': // Right arrow
-                cli->esc_state = 0; // Reset state
-                if(cli->args_index < cli->args_size) {
-                    cli->print(_QCLI_CUF(1));
-                    cli->args_index++;
-                }
-                return 0;
-            case 'D': // Left arrow
-                cli->esc_state = 0; // Reset state
-                if(cli->args_index > 0) {
-                    cli->print(_QCLI_CUB(1));
-                    cli->args_index--;
-                }
-                return 0;
-            default:
-                // Unknown sequence, reset state
-                cli->esc_state = 0;
-                return 0;
-            }
+        } else if (cli->spacial_key == 2) {
+            _special_key(cli, c);
+            return 0;
         } else {
-            // Invalid state, reset
-            cli->esc_state = 0;
+            cli->spacial_key = 0;
             return 0;
         }
     }
 
-    // Handle regular input
-    switch(c) {
-    case '\x1b': // Start of escape sequence
-        cli->esc_state = 1;
-        return 0;
+    switch (c) {
+#ifdef _WIN32
+        case '\xe0':
+            cli->spacial_key = 2;
+            return 0;
+#else
+        case '\x1b':
+            cli->spacial_key = 1;
+            return 0;
+#endif
+        case _KEY_BACKSPACE:
+        case _KEY_DEL:
+            if (cli->args_size > 0 && cli->args_size == cli->args_index) {
+                cli->args_size--;
+                cli->args_index--;
+                cli->args[cli->args_size] = '\0';
+                cli->print("\b \b");
+            } else if (cli->args_size > 0 && cli->args_index > 0) {
+                cli->args_size--;
+                cli->args_index--;
+                _strdelete(cli->args, cli->args_index, 1);
+                cli->print(_QCLI_CUB(1));
+                cli->print(_QCLI_DCH(1));
+            }
+            return 0;
 
-    case _KEY_BACKSPACE:
-    case _KEY_DEL:
-        // Handle backspace and delete keys
-        if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
-            cli->args_size--;
-            cli->args_index--;
-            cli->args[cli->args_size] = '\0';
-            cli->print("\b \b"); // Erase character from screen
-            return 0;
-        } else if((cli->args_size > 0) && (cli->args_size != cli->args_index) && (cli->args_index > 0)) {
-            cli->args_size--;
-            cli->args_index--;
-            _strdelete(cli->args, cli->args_index, 1);
-            cli->print(_QCLI_CUB(1)); // Move cursor back
-            cli->print(_QCLI_DCH(1)); // Delete character
-            return 0;
-        } else {
-            return 0;
-        }
+        case _KEY_ENTER:
+            if (cli->args_size == 0) {
+                if (!cli->is_exec_str) {
+                    cli->print("\r\n%s", _PERFIX);
+                }
+                return 0;
+            }
 
-    case _KEY_ENTER:
-        // Handle enter key press
-        if(cli->args_size == 0) {
-            if(!cli->is_exec_str) {
+            if (!cli->is_exec_str) {
+                cli->print("\r\n");
+            }
+
+            if (_strcmp(cli->args, "hs") != 0 && !cli->is_exec_str) {
+                if (_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
+                    _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
+                    _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
+                    cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
+                    if (cli->history_num < QCLI_HISTORY_MAX) {
+                        cli->history_num++;
+                    }
+                }
+            }
+
+            if (_parser(cli, cli->args, cli->args_size) != 0) {
+                _cli_reset_buffer(cli);
+                cli->print(" #! parse error !\r\n%s", _PERFIX);
+                return 0;
+            }
+            _cmd_callback(cli);
+            _cli_reset_buffer(cli);
+
+            if (!cli->is_exec_str) {
                 cli->print("\r\n%s", _PERFIX);
             }
             return 0;
-        }
 
-        if(!cli->is_exec_str) {
-            cli->print("\r\n");
-        }
+        case _KEY_TAB:
+            _handle_tab_complete(cli);
+            return 0;
 
-        if(_strcmp(cli->args, "hs") != 0 && !cli->is_exec_str) {
-            if(_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
-                _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
-                _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
-                cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
-                if(cli->history_num < QCLI_HISTORY_MAX) {
-                    cli->history_num++;
-                }
+        default:
+            if (cli->args_size >= QCLI_CMD_STR_MAX) {
+                return 0;
             }
-        }
-
-        if(_parser(cli, cli->args, cli->args_size) != 0) {
-            _cli_reset_buffer(cli);
-            cli->print(" #! parse error !\r\n%s", _PERFIX);
+            if (cli->args_size == cli->args_index) {
+                cli->args[cli->args_size++] = c;
+                cli->args_index = cli->args_size;
+            } else {
+                _strinsert(cli->args, cli->args_index++, &c, 1);
+                cli->args_size++;
+                cli->print(_QCLI_ICH(1));
+            }
+            cli->print("%c", c);
             return 0;
-        }
-        _cmd_callback(cli);
-        _cli_reset_buffer(cli);
-
-        if(!cli->is_exec_str) {
-            cli->print("\r\n%s", _PERFIX);
-        }
-        return 0;
-        
-    case _KEY_TAB:
-        _handle_tab_complete(cli);
-        return 0;
-
-    default:
-        if(cli->args_size >= QCLI_CMD_STR_MAX) {
-            return 0;
-        }
-        if(cli->args_size == cli->args_index) {
-            cli->args[cli->args_size++] = c;
-            cli->args_index = cli->args_size;
-        } else {
-            _strinsert(cli->args, cli->args_index++, &c, 1);
-            cli->args_size++;
-            cli->print(_QCLI_ICH(1));
-        }
-        cli->print("%c", c);
-        return 0;
     }
 }
 
@@ -1014,7 +965,8 @@ int qcli_exec_str(QCliObj *cli, char *str)
     QCliList *node;
     QCliList *node_safe;
     QCliCmd *cmd;
-    QCLI_ITERATOR_SAFE(node, node_safe, &cli->cmds) {
+    QCLI_ITERATOR_SAFE(node, node_safe, &cli->cmds)
+    {
         cmd = QCLI_ENTRY(node, QCliCmd, node);
         if(_strcmp(argv[0], cmd->name) == 0) {
             return cmd->callback(argc, argv);
@@ -1022,6 +974,24 @@ int qcli_exec_str(QCliObj *cli, char *str)
     }
 
     return -4; // Command not found
+}
+
+QCliCmd *qcli_find(QCliObj *cli, const char *name)
+{
+    if(!cli || !name) {
+        return QNULL;
+    }
+
+    QCliList *node;
+    QCLI_ITERATOR(node, &cli->cmds)
+    {
+        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+        if(_strcmp(name, cmd->name) == 0) {
+            return cmd;
+        }
+    }
+
+    return QNULL;
 }
 
 int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size)
@@ -1033,7 +1003,6 @@ int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t
     uint32_t n = table_size / sizeof(QCliArgsEntry);
 
     argc -= 1;
-
     for(uint32_t i = 0; i < n; i++) {
         if(_strcmp(table[i].name, argv[1]) == 0) {
             if(argc < table[i].min_args) {
