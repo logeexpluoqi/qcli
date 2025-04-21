@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2025-04-03 16:01
  * @ Modified by: luoqi
- * @ Modified time: 2025-04-10 10:39
+ * @ Modified time: 2025-04-14 16:47
  * @ Description:
  */
 
@@ -81,18 +81,18 @@ private:
     GetChFunc getch;
 };
 
-class Cli {
+class QShellSingleton {
 public:
-    static QShell& cli_obj() {
+    static QShell& instance() {
         static QShell instance(std::printf, nullptr);
         return instance;
     }
 
 private:
-    Cli() = default;
-    ~Cli() = default;
-    Cli(const Cli&) = delete;
-    Cli& operator=(const Cli&) = delete;
+    QShellSingleton() = default;
+    ~QShellSingleton() = default;
+    QShellSingleton(const QShellSingleton&) = delete;
+    QShellSingleton& operator=(const QShellSingleton&) = delete;
 };
 
 #endif
