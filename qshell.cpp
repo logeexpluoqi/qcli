@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2025-04-03 16:01
  * @ Modified by: luoqi
- * @ Modified time: 2025-04-10 11:03
+ * @ Modified time: 2025-04-21 14:55
  * @ Description:
  */
 
@@ -228,9 +228,9 @@ int QShell::exec()
     set_echo(true);
     return 0;
 }
-int QShell::args_help(QShellCmdArgsTable *table, uint32_t sz)
+int QShell::args_help(ArgsTable *table, uint32_t sz)
 {
-    uint32_t n = sz / sizeof(QShellCmdArgsTable);
+    uint32_t n = sz / sizeof(ArgsTable);
     if(table == nullptr) {
         return -1;
     }
@@ -240,7 +240,7 @@ int QShell::args_help(QShellCmdArgsTable *table, uint32_t sz)
     return 0;
 }
 
-int QShell::args_handle(int argc, char **argv, const QShellCmdArgsTable *table, uint32_t table_size)
+int QShell::args_handle(int argc, char **argv, const ArgsTable *table, uint32_t table_size)
 {
     return qcli_args_handle(argc, argv, table, table_size);
 }
