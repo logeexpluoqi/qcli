@@ -14,6 +14,7 @@
 #include <unistd.h>
 #endif
 #include <iterator>
+#include <cstdarg>
 #include "qshell.h"
 
 void set_echo(bool enable)
