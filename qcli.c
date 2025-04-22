@@ -1005,6 +1005,9 @@ int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t
     argc -= 1;
     for(uint32_t i = 0; i < n; i++) {
         if(_strcmp(table[i].name, argv[1]) == 0) {
+            if((table[i].min_args == 0) && (table[i].max_args == 0)) {
+                return table[i].handler(argc, argv + 1);
+            }
             if(argc < table[i].min_args) {
                 return QCLI_ERR_PARAM_LESS;
             } else if(argc > table[i].max_args) {
