@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2025-04-03 16:01
  * @ Modified by: luoqi
- * @ Modified time: 2025-04-21 14:55
+ * @ Modified time: 2025-04-29 17:10
  * @ Description:
  */
 
@@ -132,6 +132,31 @@ int QShell::echo(const char *fmt, ...)
     }
 
     cli.print("%s\r\n", buf.c_str());
+    return 0;
+}
+
+int QShell::str(const char *fmt, ...)
+{
+    if(fmt == nullptr) {
+        return -1;
+    }
+    va_list args;
+    va_start(args, fmt);
+
+    std::string buf(128, '\0');
+    int needed = vsnprintf(&buf[0], buf.size(), fmt, args);
+    if(needed >= static_cast<int>(buf.size())) {
+        buf.resize(needed + 1);
+        vsnprintf(&buf[0], buf.size(), fmt, args);
+    }
+    va_end(args);
+
+    buf.resize(strlen(buf.c_str()));
+    if(buf.empty()) {
+        return -1;
+    }
+
+    cli.print("%s", buf.c_str());
     return 0;
 }
 

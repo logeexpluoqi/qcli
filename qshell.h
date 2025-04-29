@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2025-04-03 16:01
  * @ Modified by: luoqi
- * @ Modified time: 2025-04-21 14:56
+ * @ Modified time: 2025-04-29 17:10
  * @ Description:
  */
 
@@ -61,6 +61,8 @@ public:
 
     // Prints a string to the shell output
     int echo(const char *fmt, ...);
+
+    int str(const char *fmt, ...);
 
     int exec(std::string str);
 
