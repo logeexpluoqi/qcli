@@ -2,40 +2,89 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-02-18 22:12
- * @ Description:
+ * @ Modified time: 2025-07-14 04:46
+ * @ Description: Header file for the ring buffer library
  */
 
 #ifndef _RINGBUF_H
 #define _RINGBUF_H
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdint.h>
+#include <stddef.h>
 
 #ifndef QNULL
 #define QNULL ((void *)0)
 #endif
 
-typedef struct 
-{
-    uint32_t wr_index;    // ring buffer write index
-    uint32_t rd_index;    // ring buffer read index
-    uint32_t used;        // ring buffer used size
-    uint32_t sz;          // ring buffer size
-    uint8_t  *buf;
-    int (*mutex_lock)(void);
-    int (*mutex_unlock)(void);
+/**
+ * @brief Structure representing a ring buffer.
+ */
+typedef struct {
+    size_t wr_index;    // Write index of the ring buffer
+    size_t rd_index;    // Read index of the ring buffer
+    size_t used;        // Used size of the ring buffer
+    size_t sz;          // Total size of the ring buffer
+    uint8_t  *buf;      // Pointer to the buffer
+    void (*lock)(void);  // Pointer to the mutex lock function
+    void (*unlock)(void); // Pointer to the mutex unlock function
 } RingBuffer;
 
-int rb_init(RingBuffer *rb, uint8_t *buf, uint32_t size, int (*mutex_lock)(void), int (*mutex_unlock)(void));
+/**
+ * @brief Initialize the ring buffer.
+ * @param rb Pointer to the ring buffer structure.
+ * @param buf Pointer to the buffer.
+ * @param sz Size of the buffer.
+ * @param mutex_lock Pointer to the mutex lock function.
+ * @param mutex_unlock Pointer to the mutex unlock function.
+ * @return 0 on success, -1 on failure.
+ */
+int rb_init(RingBuffer *rb, uint8_t *buf, size_t sz, void (*lock)(void), void (*unlock)(void));
 
-uint32_t rb_write(RingBuffer *rb, const uint8_t *data, uint32_t sz);
+/**
+ * @brief Write data to the ring buffer. Write only part of the data if there is insufficient space.
+ * @param rb Pointer to the ring buffer structure.
+ * @param data Pointer to the data to be written.
+ * @param sz Size of the data to be written.
+ * @return The actual number of bytes written.
+ */
+size_t rb_write(RingBuffer *rb, const uint8_t *data, size_t sz);
 
-uint32_t rb_write_force(RingBuffer *rb, const uint8_t *data, uint32_t sz);
+/**
+ * @brief Force write data to the ring buffer. Overwrite old data if there is insufficient space.
+ * @param rb Pointer to the ring buffer structure.
+ * @param data Pointer to the data to be written.
+ * @param sz Size of the data to be written.
+ * @return The actual number of bytes written.
+ */
+size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz);
 
-uint32_t rb_read(RingBuffer *rb, uint8_t *rdata, uint32_t sz);
+/**
+ * @brief Read data from the ring buffer.
+ * @param rb Pointer to the ring buffer structure.
+ * @param rdata Pointer to store the read data.
+ * @param sz Expected number of bytes to read.
+ * @return The actual number of bytes read.
+ */
+size_t rb_read(RingBuffer *rb, uint8_t *rdata, size_t sz);
 
-uint32_t rb_used(RingBuffer *rb);
+/**
+ * @brief Get the used size of the ring buffer.
+ * @param rb Pointer to the ring buffer structure.
+ * @return The used size of the ring buffer.
+ */
+size_t rb_used(RingBuffer *rb);
 
+/**
+ * @brief Clear the ring buffer.
+ * @param rb Pointer to the ring buffer structure.
+ */
 void rb_clr(RingBuffer *rb);
 
+#ifdef __cplusplus
+}
+#endif
 #endif
