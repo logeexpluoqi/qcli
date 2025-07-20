@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2025-06-24 21:06
  * @ Modified by: luoqi
- * @ Modified time: 2025-07-14 04:45
+ * @ Modified time: 2025-07-20 14:37
  * @ Description:
  */
 
@@ -66,12 +66,12 @@ int rb_init(RingBuffer *rb, uint8_t *buf, size_t sz, void (*lock)(void), void (*
     return 0;
 }
 
-size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz)
+size_t rb_write_force(RingBuffer *rb, const void *data, size_t sz)
 {
     if(!rb || !data || !sz) {
         return 0;
     }
-
+    const uint8_t *p = (const uint8_t *)data;
     if(rb->lock && rb->unlock) {
         rb->lock();
     }
@@ -91,7 +91,7 @@ size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz)
         size_t to_write = (remaining < contiguous) ? remaining : contiguous;
         to_write = (to_write > (rb->sz - rb->used)) ? (rb->sz - rb->used) : to_write;
 
-        _memcpy(rb->buf + rb->wr_index, data + total_written, to_write);
+        _memcpy(rb->buf + rb->wr_index, p + total_written, to_write);
 
         rb->wr_index = (rb->wr_index + to_write) % rb->sz;
         rb->used += to_write;
@@ -105,7 +105,7 @@ size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz)
     return total_written;
 }
 
-size_t rb_write(RingBuffer *rb, const uint8_t *data, size_t sz)
+size_t rb_write(RingBuffer *rb, const void *data, size_t sz)
 {
     if(!rb || !data) {
         return 0;
@@ -114,11 +114,12 @@ size_t rb_write(RingBuffer *rb, const uint8_t *data, size_t sz)
     return rb_write_force(rb, data, sz);
 }
 
-size_t rb_read(RingBuffer *rb, uint8_t *rdata, size_t sz)
+size_t rb_read(RingBuffer *rb, void *rdata, size_t sz)
 {
     if(!rb || !rdata) {
         return 0;
     }
+    uint8_t *p = (uint8_t *)rdata;
     if(rb->lock && rb->unlock) {
         rb->lock();
     }
@@ -130,7 +131,7 @@ size_t rb_read(RingBuffer *rb, uint8_t *rdata, size_t sz)
     while(sz > 0) {
         size_t contiguous = rb->sz - rb->rd_index;
         size_t to_read = (sz < contiguous) ? sz : contiguous;
-        _memcpy(rdata + total_read, rb->buf + rb->rd_index, to_read);
+        _memcpy(p + total_read, rb->buf + rb->rd_index, to_read);
         rb->rd_index = (rb->rd_index + to_read) % rb->sz;
         rb->used -= to_read;
         total_read += to_read;

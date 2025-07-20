@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-07-17 11:39
  * @ Modified by: luoqi
- * @ Modified time: 2025-07-14 04:46
+ * @ Modified time: 2025-07-20 14:36
  * @ Description: Header file for the ring buffer library
  */
 
@@ -51,7 +51,7 @@ int rb_init(RingBuffer *rb, uint8_t *buf, size_t sz, void (*lock)(void), void (*
  * @param sz Size of the data to be written.
  * @return The actual number of bytes written.
  */
-size_t rb_write(RingBuffer *rb, const uint8_t *data, size_t sz);
+size_t rb_write(RingBuffer *rb, const void *data, size_t sz);
 
 /**
  * @brief Force write data to the ring buffer. Overwrite old data if there is insufficient space.
@@ -60,7 +60,7 @@ size_t rb_write(RingBuffer *rb, const uint8_t *data, size_t sz);
  * @param sz Size of the data to be written.
  * @return The actual number of bytes written.
  */
-size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz);
+size_t rb_write_force(RingBuffer *rb, const void *data, size_t sz);
 
 /**
  * @brief Read data from the ring buffer.
@@ -69,7 +69,7 @@ size_t rb_write_force(RingBuffer *rb, const uint8_t *data, size_t sz);
  * @param sz Expected number of bytes to read.
  * @return The actual number of bytes read.
  */
-size_t rb_read(RingBuffer *rb, uint8_t *rdata, size_t sz);
+size_t rb_read(RingBuffer *rb, void *rdata, size_t sz);
 
 /**
  * @brief Get the used size of the ring buffer.
