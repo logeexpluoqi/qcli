@@ -14,6 +14,7 @@ extern "C" {
 #endif
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef struct _list{
     struct _list *prev;
@@ -76,27 +77,24 @@ typedef int (*QCliCallback)(int, char **);
 typedef struct {
     QCliObj *cli;
     const char *name;
-    QCliCallback callback;
+    QCliCallback cb;
     const char *usage;
     QCliList node;
 } QCliCmd;
 
-typedef int (ArgsHandler)(int argc, char **argv);
 typedef struct {
     const char *name;
-    int min_args;
-    int max_args;
-    ArgsHandler *handler;
-    const char *help;
-} QCliArgsEntry;
+    QCliCallback cb;
+    const char *usage;
+} QCliSubCmdTable;
 
-int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size);
+int qcli_subcmd_hdl(int argc, char **argv, const QCliSubCmdTable *table, size_t table_size);
 
 int qcli_init(QCliObj *cli, QCliPrint print);
 
 int qcli_title(QCliObj *cli);
 
-int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage);
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
 
 int qcli_remove(QCliObj *cli, QCliCmd *cmd);
 

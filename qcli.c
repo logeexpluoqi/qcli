@@ -508,7 +508,7 @@ static void _handle_tab_complete(QCliObj *cli)
         if(cli->is_echo) {
             cli->print("\r%s%s", _PERFIX, cli->args);
         }
-        
+
     } else if(matches > 1) {
         if(cli->is_echo) {
             cli->print("\r\n");
@@ -697,7 +697,7 @@ static int _cmd_callback(QCliObj *cli)
     {
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
         if(_strcmp(cli->argv[0], _cmd->name) == 0) {
-            result = _cmd->callback(cli->argc, cli->argv);
+            result = _cmd->cb(cli->argc, cli->argv);
             if(!cli->is_echo) {
                 return 0;
             }
@@ -770,13 +770,13 @@ int qcli_title(QCliObj *cli)
 }
 
 
-int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback callback, const char *usage)
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage)
 {
-    if(!cli || !cmd || !callback) {
+    if(!cli || !cmd || !cb) {
         return -1;
     }
     cmd->name = name;
-    cmd->callback = callback;
+    cmd->cb = cb;
     cmd->usage = usage;
     if(!_cmd_isexist(cli, cmd)) {
         _list_insert(&cli->cmds, &cmd->node);
@@ -1039,7 +1039,7 @@ int qcli_exec_str(QCliObj *cli, char *str)
     {
         cmd = QCLI_ENTRY(node, QCliCmd, node);
         if(_strcmp(argv[0], cmd->name) == 0) {
-            return cmd->callback(argc, argv);
+            return cmd->cb(argc, argv);
         }
     }
 
@@ -1064,26 +1064,19 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name)
     return QNULL;
 }
 
-int qcli_args_handle(int argc, char **argv, const QCliArgsEntry *table, uint32_t table_size)
+int qcli_subcmd_hdl(int argc, char **argv, const QCliSubCmdTable *table, size_t table_size)
 {
     if(!table || argc < 2) {
         return QCLI_ERR_PARAM;
     }
 
-    uint32_t n = table_size / sizeof(QCliArgsEntry);
+    size_t n = table_size / sizeof(QCliSubCmdTable);
 
     argc -= 1;
-    for(uint32_t i = 0; i < n; i++) {
+    for(size_t i = 0; i < n; i++) {
         if(_strcmp(table[i].name, argv[1]) == 0) {
-            if(argc < table[i].min_args) {
-                return QCLI_ERR_PARAM_LESS;
-            } else if(argc > table[i].max_args) {
-                return QCLI_ERR_PARAM_MORE;
-            } else {
-                return table[i].handler(argc, argv + 1);
-            }
+            return table[i].cb(argc, argv + 1);
         }
     }
-
     return QCLI_ERR_PARAM_UNKONWN;
 }
