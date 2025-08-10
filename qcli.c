@@ -59,7 +59,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
-static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
+static inline void *_memcpy(void *dst, const void *src, size_t sz)
 {
     if(!dst || !src) {
         return QNULL;
@@ -69,7 +69,7 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
     const uint8_t *s = (const uint8_t *)src;
 
     // Handle small copies byte by byte
-    if(sz < sizeof(uint32_t)) {
+    if(sz < sizeof(size_t)) {
         if(d < s) {
             while(sz--) *d++ = *s++;
         } else {
@@ -81,17 +81,17 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
     }
 
     // Align destination to word boundary
-    while(((uintptr_t)d & (sizeof(uint32_t) - 1)) != 0) {
+    while(((uintptr_t)d & (sizeof(size_t) - 1)) != 0) {
         *d++ = *s++;
         sz--;
     }
 
     // Copy words at a time
-    uint32_t *dw = (uint32_t *)d;
-    const uint32_t *sw = (const uint32_t *)s;
-    while(sz >= sizeof(uint32_t)) {
+    size_t *dw = (size_t *)d;
+    const size_t *sw = (const size_t *)s;
+    while(sz >= sizeof(size_t)) {
         *dw++ = *sw++;
-        sz -= sizeof(uint32_t);
+        sz -= sizeof(size_t);
     }
 
     // Copy remaining bytes
@@ -102,7 +102,7 @@ static inline void *_memcpy(void *dst, const void *src, uint32_t sz)
     return dst;
 }
 
-static void *_memset(void *dest, int c, uint32_t n)
+static void *_memset(void *dest, int c, size_t n)
 {
     if(!dest) {
         return QNULL;
@@ -112,7 +112,7 @@ static void *_memset(void *dest, int c, uint32_t n)
     uint8_t byte = (uint8_t)c;
 
     // Handle small sizes byte by byte
-    if(n < sizeof(uint32_t)) {
+    if(n < sizeof(size_t)) {
         while(n--) {
             *pdest++ = byte;
         }
@@ -120,19 +120,19 @@ static void *_memset(void *dest, int c, uint32_t n)
     }
 
     // Fill first bytes until aligned
-    while(((uintptr_t)pdest & (sizeof(uint32_t) - 1)) != 0) {
+    while(((uintptr_t)pdest & (sizeof(size_t) - 1)) != 0) {
         *pdest++ = byte;
         n--;
     }
 
     // Create word-sized pattern
-    uint32_t pattern = byte;
+    size_t pattern = byte;
     pattern |= pattern << 8;
     pattern |= pattern << 16;
 
     // Fill by words
-    uint32_t *pdest_w = (uint32_t *)pdest;
-    for(; n >= sizeof(uint32_t); n -= sizeof(uint32_t)) {
+    size_t *pdest_w = (size_t *)pdest;
+    for(; n >= sizeof(size_t); n -= sizeof(size_t)) {
         *pdest_w++ = pattern;
     }
 
@@ -145,20 +145,20 @@ static void *_memset(void *dest, int c, uint32_t n)
     return dest;
 }
 
-static uint32_t _strlen(const char *s)
+static size_t _strlen(const char *s)
 {
     if(!s) return 0;
 
     const char *start = s;
 
     // Handle unaligned bytes first
-    while(((uintptr_t)s & (sizeof(uint32_t) - 1)) != 0) {
+    while(((uintptr_t)s & (sizeof(size_t) - 1)) != 0) {
         if(!*s) return s - start;
         s++;
     }
 
     // Check word at a time
-    const uint32_t *w = (const uint32_t *)s;
+    const size_t *w = (const size_t *)s;
     while(!(((*w) - 0x01010101UL) & ~(*w) & 0x80808080UL)) {
         w++;
     }
@@ -179,17 +179,17 @@ static char *_strcpy(char *dest, const char *src)
     char *orig_dest = dest;
 
     // Use word-sized copies for large strings
-    if(_strlen(src) >= sizeof(uint32_t)) {
+    if(_strlen(src) >= sizeof(size_t)) {
         // Align destination to word boundary
-        while(((uintptr_t)dest & (sizeof(uint32_t) - 1)) != 0) {
+        while(((uintptr_t)dest & (sizeof(size_t) - 1)) != 0) {
             if(!(*dest = *src)) return orig_dest;
             dest++;
             src++;
         }
 
         // Copy words at a time
-        uint32_t *dest_w = (uint32_t *)dest;
-        const uint32_t *src_w = (const uint32_t *)src;
+        size_t *dest_w = (size_t *)dest;
+        const size_t *src_w = (const size_t *)src;
         while(!(((*src_w) - 0x01010101UL) & ~(*src_w) & 0x80808080UL)) {
             *dest_w++ = *src_w++;
         }
@@ -226,7 +226,7 @@ static int _strcmp(const char *s1, const char *s2)
     }
 
     // Align to word boundary
-    while(((uintptr_t)s1 & (sizeof(uint32_t) - 1)) != 0) {
+    while(((uintptr_t)s1 & (sizeof(size_t) - 1)) != 0) {
         if(*s1 != *s2) {
             return (*(uint8_t *)s1 - *(uint8_t *)s2);
         }
@@ -236,8 +236,8 @@ static int _strcmp(const char *s1, const char *s2)
     }
 
     // Compare by machine words
-    const uint32_t *w1 = (const uint32_t *)s1;
-    const uint32_t *w2 = (const uint32_t *)s2;
+    const size_t *w1 = (const size_t *)s1;
+    const size_t *w2 = (const size_t *)s2;
 
     while(*w1 == *w2) {
         if((((*w1) - 0x01010101UL) & ~(*w1) & 0x80808080UL)) {
@@ -259,7 +259,7 @@ static int _strcmp(const char *s1, const char *s2)
     return (*(uint8_t *)s1 - *(uint8_t *)s2);
 }
 
-static int _strncmp(const char *s1, const char *s2, uint32_t n)
+static int _strncmp(const char *s1, const char *s2, size_t n)
 {
     if(!n) return 0;
     if(!s1 || !s2) return -1;
@@ -280,9 +280,9 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
     }
 
     uintptr_t s1_addr = (uintptr_t)s1;
-    uint32_t align_adj = s1_addr & (sizeof(uint32_t) - 1);
+    size_t align_adj = s1_addr & (sizeof(size_t) - 1);
     if(align_adj) {
-        align_adj = sizeof(uint32_t) - align_adj;
+        align_adj = sizeof(size_t) - align_adj;
         n -= align_adj;
         do {
             if(*s1 != *s2) {
@@ -293,15 +293,15 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
         } while(--align_adj);
     }
 
-    uint32_t *w1 = (uint32_t *)s1;
-    uint32_t *w2 = (uint32_t *)s2;
-    uint32_t len = n / sizeof(uint32_t);
+    size_t *w1 = (size_t *)s1;
+    size_t *w2 = (size_t *)s2;
+    size_t len = n / sizeof(size_t);
 
     while(len--) {
         if(*w1 != *w2) {
             s1 = (const char *)w1;
             s2 = (const char *)w2;
-            for(uint32_t i = 0; i < sizeof(uint32_t); i++) {
+            for(size_t i = 0; i < sizeof(size_t); i++) {
                 if(s1[i] != s2[i]) {
                     return ((uint8_t)s1[i] - (uint8_t)s2[i]);
                 }
@@ -314,7 +314,7 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
 
     s1 = (const char *)w1;
     s2 = (const char *)w2;
-    n &= (sizeof(uint32_t) - 1);
+    n &= (sizeof(size_t) - 1);
     if(n) {
         do {
             if(*s1 != *s2) {
@@ -328,26 +328,26 @@ static int _strncmp(const char *s1, const char *s2, uint32_t n)
     return 0;
 }
 
-static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
+static void *_strinsert(char *s, size_t offset, char *c, size_t size)
 {
     if(!s || !c || !size) {
         return QNULL;
     }
 
-    uint32_t len = _strlen(s);
+    size_t len = _strlen(s);
     if(offset > len) {
         return QNULL;
     }
 
     // For large insertions, use word-aligned copies
-    if(size >= sizeof(uint32_t)) {
+    if(size >= sizeof(size_t)) {
         // Move the existing string first
-        uint32_t move_size = len - offset + 1;  // Include null terminator
-        if(move_size >= sizeof(uint32_t)) {
+        size_t move_size = len - offset + 1;  // Include null terminator
+        if(move_size >= sizeof(size_t)) {
             // Move from end to avoid overlap issues
-            uint32_t *dst = (uint32_t *)(s + len + size - (move_size & ~(sizeof(uint32_t) - 1)));
-            uint32_t *src = (uint32_t *)(s + len - (move_size & ~(sizeof(uint32_t) - 1)));
-            uint32_t words = move_size / sizeof(uint32_t);
+            size_t *dst = (size_t *)(s + len + size - (move_size & ~(sizeof(size_t) - 1)));
+            size_t *src = (size_t *)(s + len - (move_size & ~(sizeof(size_t) - 1)));
+            size_t words = move_size / sizeof(size_t);
 
             while(words--) {
                 *dst-- = *src--;
@@ -356,7 +356,7 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
             // Handle remaining bytes
             char *d = (char *)(dst + 1);
             char *p = (char *)(src + 1);
-            for(uint32_t i = 0; i < (move_size % sizeof(uint32_t)); i++) {
+            for(size_t i = 0; i < (move_size % sizeof(size_t)); i++) {
                 *--d = *--p;
             }
         } else {
@@ -367,9 +367,9 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
         }
 
         // Insert new content using word-aligned copies where possible
-        uint32_t *dst = (uint32_t *)(s + offset);
-        uint32_t *src = (uint32_t *)c;
-        uint32_t words = size / sizeof(uint32_t);
+        size_t *dst = (size_t *)(s + offset);
+        size_t *src = (size_t *)c;
+        size_t words = size / sizeof(size_t);
 
         while(words--) {
             *dst++ = *src++;
@@ -378,7 +378,7 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
         // Copy remaining bytes
         char *d = (char *)dst;
         char *p = (char *)src;
-        for(uint32_t i = 0; i < (size % sizeof(uint32_t)); i++) {
+        for(size_t i = 0; i < (size % sizeof(size_t)); i++) {
             *d++ = *p++;
         }
     } else {
@@ -392,13 +392,13 @@ static void *_strinsert(char *s, uint32_t offset, char *c, uint32_t size)
     return s;
 }
 
-static void *_strdelete(char *s, uint32_t offset, uint32_t size)
+static void *_strdelete(char *s, size_t offset, size_t size)
 {
     if(!s || !size) {
         return QNULL;
     }
 
-    uint32_t len = _strlen(s);
+    size_t len = _strlen(s);
     if(offset >= len) {
         return QNULL;
     }
@@ -409,10 +409,10 @@ static void *_strdelete(char *s, uint32_t offset, uint32_t size)
     }
 
     // Use word-aligned copies for large deletions
-    if(size >= sizeof(uint32_t)) {
-        uint32_t *dst = (uint32_t *)(s + offset);
-        uint32_t *src = (uint32_t *)(s + offset + size);
-        uint32_t words = (len - offset - size) / sizeof(uint32_t);
+    if(size >= sizeof(size_t)) {
+        size_t *dst = (size_t *)(s + offset);
+        size_t *src = (size_t *)(s + offset + size);
+        size_t words = (len - offset - size) / sizeof(size_t);
 
         while(words--) {
             *dst++ = *src++;
@@ -421,7 +421,7 @@ static void *_strdelete(char *s, uint32_t offset, uint32_t size)
         // Copy remaining bytes
         char *d = (char *)dst;
         char *p = (char *)src;
-        size = (len - offset - size) % sizeof(uint32_t);
+        size = (len - offset - size) % sizeof(size_t);
         while(size--) {
             *d++ = *p++;
         }
@@ -581,12 +581,12 @@ static int _help_cb(int argc, char **argv)
         _help.cli->print(" .%-9s     - ", cmd->name);
 
         const char *usage = cmd->usage;
-        uint32_t remain_len = _strlen(usage);
-        uint32_t offset = 0;
+        size_t remain_len = _strlen(usage);
+        size_t offset = 0;
         uint8_t first_line = 1;
 
         while(remain_len > 0) {
-            uint32_t print_len = (remain_len > QCLI_USAGE_DISP_MAX) ?
+            size_t print_len = (remain_len > QCLI_USAGE_DISP_MAX) ?
                 QCLI_USAGE_DISP_MAX : remain_len;
 
             if(first_line) {
