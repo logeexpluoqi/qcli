@@ -51,13 +51,14 @@ public:
     int stop();
     
     // Function to display help for command arguments
-    typedef QCliArgsEntry ArgsTable;
-    int args_help(ArgsTable *table, uint32_t sz);
+    // typedef QCliArgsEntry QCliSubCmdTable;
+    using SubCmdTable = QCliSubCmdTable;
+    int args_help(SubCmdTable *table, size_t sz);
 
     // Function to handle command arguments
     // argc: Number of this second arguments, skip the first argument(command name)
     // argv: Array of argument strings, skip the first argument(command name)
-    int args_handle(int argc, char **argv, const ArgsTable *table, uint32_t table_size);
+    int args_handle(int argc, char **argv, const SubCmdTable *table, size_t table_size);
 
     // Prints a string to the shell output
     int echo(const char *fmt, ...);

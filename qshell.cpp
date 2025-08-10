@@ -254,19 +254,19 @@ int QShell::exec()
     set_echo(true);
     return 0;
 }
-int QShell::args_help(ArgsTable *table, uint32_t sz)
+int QShell::args_help(SubCmdTable *table, size_t sz)
 {
-    uint32_t n = sz / sizeof(ArgsTable);
+    uint32_t n = sz / sizeof(SubCmdTable);
     if(table == nullptr) {
         return -1;
     }
     for(uint32_t i = 0; i < n; i++) {
-        cli.print(" -%s  %s\r\n", table[i].name, table[i].help);
+        cli.print(" -%s  %s\r\n", table[i].name, table[i].usage);
     }
     return 0;
 }
 
-int QShell::args_handle(int argc, char **argv, const ArgsTable *table, uint32_t table_size)
+int QShell::args_handle(int argc, char **argv, const SubCmdTable *table, size_t table_size)
 {
-    return qcli_args_handle(argc, argv, table, table_size);
+    return qcli_subcmd_hdl(argc, argv, table, table_size);
 }
