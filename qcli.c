@@ -1,8 +1,8 @@
 /**
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
- * @ Modified by: luoqi
- * @ Modified time: 2025-08-08 00:38
+ * @ Modified by: Your name
+ * @ Modified time: 2025-08-10 23:28:28
  * @ Description:
  */
 
@@ -802,20 +802,15 @@ int qcli_remove(QCliObj *cli, QCliCmd *cmd)
 
 static void _history_navigation(QCliObj *cli, int direction)
 {
-    if(cli->history_num == 0) {
-        cli->history_recall_times = 0;
-        return;
-    }
-
-    if(direction == -1 && cli->history_recall_times < cli->history_num) { // _KEY_UP
+    if((direction == -1) && (cli->history_recall_times < cli->history_num)) { // _KEY_UP
         cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
         cli->history_recall_times++;
-    } else if(direction == 1 && cli->history_recall_times > 1) { // _KEY_DOWN
+    } else if((direction == 1) && (cli->history_recall_times > 1)) { // _KEY_DOWN
         cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
         cli->history_recall_times--;
     } else {
-        _cli_reset_buffer(cli);
-        if(cli->is_echo) {
+        if((cli->history_recall_times <= 1) && cli->is_echo) {
+            _cli_reset_buffer(cli);
             cli->print("%s%s", _CLEAR_LINE, _PERFIX);
         }
         return;
