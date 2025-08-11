@@ -270,3 +270,8 @@ int QShell::args_handle(int argc, char **argv, const SubCmdTable *table, size_t 
 {
     return qcli_subcmd_hdl(argc, argv, table, table_size);
 }
+
+void QShell::title(void)
+{
+    qcli_title(&cli);
+}

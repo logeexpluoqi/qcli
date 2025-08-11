@@ -68,6 +68,8 @@ public:
     int exec(std::string str);
 
     int exec();
+
+    void title();
 private:
     // Thread object for running the shell
     std::thread thread_qshell;
