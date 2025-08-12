@@ -61,148 +61,77 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 
 static inline void *_memcpy(void *dst, const void *src, size_t sz)
 {
-    if(!dst || !src) {
-        return QNULL;
-    }
-
+    if(!dst || !src) return QNULL;
     uint8_t *d = (uint8_t *)dst;
     const uint8_t *s = (const uint8_t *)src;
-
-    // Handle small copies byte by byte
-    if(sz < sizeof(size_t)) {
-        if(d < s) {
-            while(sz--) *d++ = *s++;
-        } else {
-            d += sz;
-            s += sz;
-            while(sz--) *--d = *--s;
-        }
+    if(sz < sizeof(size_t) || d < s || d >= s + sz) {
+        while(sz--) *d++ = *s++;
         return dst;
     }
-
-    // Align destination to word boundary
-    while(((uintptr_t)d & (sizeof(size_t) - 1)) != 0) {
+    while(((uintptr_t)d & (sizeof(size_t) - 1)) && sz--) {
         *d++ = *s++;
-        sz--;
     }
-
-    // Copy words at a time
     size_t *dw = (size_t *)d;
     const size_t *sw = (const size_t *)s;
-    while(sz >= sizeof(size_t)) {
+    for(size_t n = sz / sizeof(size_t); n--; sz -= sizeof(size_t)) {
         *dw++ = *sw++;
-        sz -= sizeof(size_t);
     }
-
-    // Copy remaining bytes
     d = (uint8_t *)dw;
     s = (const uint8_t *)sw;
-    while(sz--) *d++ = *s++;
-
+    while(sz--) {
+        *d++ = *s++;
+    }
     return dst;
 }
 
 static void *_memset(void *dest, int c, size_t n)
 {
-    if(!dest) {
-        return QNULL;
-    }
-
-    uint8_t *pdest = (uint8_t *)dest;
+    if(!dest) return QNULL;
+    uint8_t *p = (uint8_t *)dest;
     uint8_t byte = (uint8_t)c;
 
-    // Handle small sizes byte by byte
-    if(n < sizeof(size_t)) {
-        while(n--) {
-            *pdest++ = byte;
-        }
-        return dest;
-    }
-
-    // Fill first bytes until aligned
-    while(((uintptr_t)pdest & (sizeof(size_t) - 1)) != 0) {
-        *pdest++ = byte;
-        n--;
-    }
-
-    // Create word-sized pattern
-    size_t pattern = byte;
-    pattern |= pattern << 8;
-    pattern |= pattern << 16;
-
-    // Fill by words
-    size_t *pdest_w = (size_t *)pdest;
-    for(; n >= sizeof(size_t); n -= sizeof(size_t)) {
-        *pdest_w++ = pattern;
-    }
-
-    // Fill remaining bytes
-    pdest = (uint8_t *)pdest_w;
     while(n--) {
-        *pdest++ = byte;
+        *p++ = byte;
     }
-
     return dest;
 }
 
 static size_t _strlen(const char *s)
 {
     if(!s) return 0;
-
     const char *start = s;
-
-    // Handle unaligned bytes first
-    while(((uintptr_t)s & (sizeof(size_t) - 1)) != 0) {
-        if(!*s) return s - start;
+    while(((uintptr_t)s & (sizeof(size_t) - 1)) && *s) {
         s++;
     }
-
-    // Check word at a time
     const size_t *w = (const size_t *)s;
     while(!(((*w) - 0x01010101UL) & ~(*w) & 0x80808080UL)) {
         w++;
     }
-
-    // Check remaining bytes
     s = (const char *)w;
-    while(*s) s++;
-
+    while(*s) {
+        s++;
+    }
     return s - start;
 }
 
 static char *_strcpy(char *dest, const char *src)
 {
-    if(!dest || !src) {
-        return QNULL;
+    if(!dest || !src) return QNULL;
+    char *org = dest;
+    if(_strlen(src) < sizeof(size_t)) {
+        while((*dest++ = *src++));
+        return org;
     }
-
-    char *orig_dest = dest;
-
-    // Use word-sized copies for large strings
-    if(_strlen(src) >= sizeof(size_t)) {
-        // Align destination to word boundary
-        while(((uintptr_t)dest & (sizeof(size_t) - 1)) != 0) {
-            if(!(*dest = *src)) return orig_dest;
-            dest++;
-            src++;
-        }
-
-        // Copy words at a time
-        size_t *dest_w = (size_t *)dest;
-        const size_t *src_w = (const size_t *)src;
-        while(!(((*src_w) - 0x01010101UL) & ~(*src_w) & 0x80808080UL)) {
-            *dest_w++ = *src_w++;
-        }
-
-        // Restore byte pointers
-        dest = (char *)dest_w;
-        src = (const char *)src_w;
+    while(((uintptr_t)dest & (sizeof(size_t) - 1)) && (*dest++ = *src++));
+    size_t *dw = (size_t *)dest;
+    const size_t *sw = (const size_t *)src;
+    while(!(((*sw) - 0x01010101UL) & ~(*sw) & 0x80808080UL)) {
+        *dw++ = *sw++;
     }
-
-    // Copy remaining bytes
-    while((*dest++ = *src++) != '\0');
-
-    return orig_dest;
+    dest = (char *)dw;
+    src = (const char *)sw;
+    while((*dest++ = *src++));
+    return org;
 }
 
 static int _strcmp(const char *s1, const char *s2)
@@ -210,227 +139,85 @@ static int _strcmp(const char *s1, const char *s2)
     if(!s1 || !s2) {
         return -1;
     }
-
-    // Quick check for first character
     if(*s1 != *s2) {
-        return (*(uint8_t *)s1 - *(uint8_t *)s2);
+        return *(uint8_t *)s1 - *(uint8_t *)s2;
     }
-
-    // For short strings, use byte-by-byte comparison
+    if(!*s1) {
+        return 0;
+    }
     if(_strlen(s1) < 8) {
-        while(*s1 && (*s1 == *s2)) {
+        while(*s1 && *s1 == *s2) {
             s1++;
             s2++;
         }
-        return (*(uint8_t *)s1 - *(uint8_t *)s2);
+        return *(uint8_t *)s1 - *(uint8_t *)s2;
     }
-
-    // Align to word boundary
-    while(((uintptr_t)s1 & (sizeof(size_t) - 1)) != 0) {
-        if(*s1 != *s2) {
-            return (*(uint8_t *)s1 - *(uint8_t *)s2);
-        }
-        if(!*s1) return 0;
+    while(((uintptr_t)s1 & (sizeof(size_t) - 1)) && *s1 == *s2 && *s1) {
         s1++;
         s2++;
     }
-
-    // Compare by machine words
-    const size_t *w1 = (const size_t *)s1;
-    const size_t *w2 = (const size_t *)s2;
-
-    while(*w1 == *w2) {
-        if((((*w1) - 0x01010101UL) & ~(*w1) & 0x80808080UL)) {
-            // Found null terminator
-            break;
-        }
+    if(*s1 != *s2) {
+        return *(uint8_t *)s1 - *(uint8_t *)s2;
+    }
+    if(!*s1) {
+        return 0;
+    }
+    const size_t *w1 = (const size_t *)s1, *w2 = (const size_t *)s2;
+    while(*w1 == *w2 && !(((*w1) - 0x01010101UL) & ~(*w1) & 0x80808080UL)) {
         w1++;
         w2++;
     }
-
-    // Convert back to bytes for final comparison
     s1 = (const char *)w1;
     s2 = (const char *)w2;
-
-    while(*s1 && (*s1 == *s2)) {
+    while(*s1 && *s1 == *s2) {
         s1++;
         s2++;
     }
-    return (*(uint8_t *)s1 - *(uint8_t *)s2);
+    return *(uint8_t *)s1 - *(uint8_t *)s2;
 }
 
 static int _strncmp(const char *s1, const char *s2, size_t n)
 {
-    if(!n) return 0;
-    if(!s1 || !s2) return -1;
-
-    if(*s1 != *s2) {
-        return (*(uint8_t *)s1 - *(uint8_t *)s2);
+    if(!n || !s1 || !s2) {
+        return n ? -1 : 0;
     }
-
-    if(n < 8) {
-        do {
-            if(*s1 != *s2) {
-                return (*(uint8_t *)s1 - *(uint8_t *)s2);
-            }
-            if(!*s1++) return 0;
-            s2++;
-        } while(--n);
+    while(n-- && *s1 && *s2 && *s1 == *s2) {
+        s1++;
+        s2++;
+    }
+    if(n == (size_t)-1) {
         return 0;
     }
-
-    uintptr_t s1_addr = (uintptr_t)s1;
-    size_t align_adj = s1_addr & (sizeof(size_t) - 1);
-    if(align_adj) {
-        align_adj = sizeof(size_t) - align_adj;
-        n -= align_adj;
-        do {
-            if(*s1 != *s2) {
-                return (*(uint8_t *)s1 - *(uint8_t *)s2);
-            }
-            if(!*s1++) return 0;
-            s2++;
-        } while(--align_adj);
-    }
-
-    size_t *w1 = (size_t *)s1;
-    size_t *w2 = (size_t *)s2;
-    size_t len = n / sizeof(size_t);
-
-    while(len--) {
-        if(*w1 != *w2) {
-            s1 = (const char *)w1;
-            s2 = (const char *)w2;
-            for(size_t i = 0; i < sizeof(size_t); i++) {
-                if(s1[i] != s2[i]) {
-                    return ((uint8_t)s1[i] - (uint8_t)s2[i]);
-                }
-                if(!s1[i]) return 0;
-            }
-        }
-        w1++;
-        w2++;
-    }
-
-    s1 = (const char *)w1;
-    s2 = (const char *)w2;
-    n &= (sizeof(size_t) - 1);
-    if(n) {
-        do {
-            if(*s1 != *s2) {
-                return (*(uint8_t *)s1 - *(uint8_t *)s2);
-            }
-            if(!*s1++) return 0;
-            s2++;
-        } while(--n);
-    }
-
-    return 0;
+    return *(uint8_t *)s1 - *(uint8_t *)s2;
 }
 
 static void *_strinsert(char *s, size_t offset, char *c, size_t size)
 {
-    if(!s || !c || !size) {
-        return QNULL;
-    }
-
+    if(!s || !c || !size) return QNULL;
     size_t len = _strlen(s);
     if(offset > len) {
         return QNULL;
     }
-
-    // For large insertions, use word-aligned copies
-    if(size >= sizeof(size_t)) {
-        // Move the existing string first
-        size_t move_size = len - offset + 1;  // Include null terminator
-        if(move_size >= sizeof(size_t)) {
-            // Move from end to avoid overlap issues
-            size_t *dst = (size_t *)(s + len + size - (move_size & ~(sizeof(size_t) - 1)));
-            size_t *src = (size_t *)(s + len - (move_size & ~(sizeof(size_t) - 1)));
-            size_t words = move_size / sizeof(size_t);
-
-            while(words--) {
-                *dst-- = *src--;
-            }
-
-            // Handle remaining bytes
-            char *d = (char *)(dst + 1);
-            char *p = (char *)(src + 1);
-            for(size_t i = 0; i < (move_size % sizeof(size_t)); i++) {
-                *--d = *--p;
-            }
-        } else {
-            // Small trailing portion, use byte copy
-            for(int32_t i = len; i >= (int32_t)offset; i--) {
-                s[i + size] = s[i];
-            }
-        }
-
-        // Insert new content using word-aligned copies where possible
-        size_t *dst = (size_t *)(s + offset);
-        size_t *src = (size_t *)c;
-        size_t words = size / sizeof(size_t);
-
-        while(words--) {
-            *dst++ = *src++;
-        }
-
-        // Copy remaining bytes
-        char *d = (char *)dst;
-        char *p = (char *)src;
-        for(size_t i = 0; i < (size % sizeof(size_t)); i++) {
-            *d++ = *p++;
-        }
-    } else {
-        // For small insertions, use simple byte operations
-        for(int32_t i = len; i >= (int32_t)offset; i--) {
-            s[i + size] = s[i];
-        }
-        _memcpy(s + offset, c, size);
+    for(int32_t i = len; i >= (int32_t)offset; i--) {
+        s[i + size] = s[i];
     }
-
+    _memcpy(s + offset, c, size);
     return s;
 }
 
 static void *_strdelete(char *s, size_t offset, size_t size)
 {
-    if(!s || !size) {
-        return QNULL;
-    }
-
+    if(!s || !size) return QNULL;
     size_t len = _strlen(s);
     if(offset >= len) {
         return QNULL;
     }
-
-    // Adjust size if it would exceed string length
     if(offset + size > len) {
         size = len - offset;
     }
-
-    // Use word-aligned copies for large deletions
-    if(size >= sizeof(size_t)) {
-        size_t *dst = (size_t *)(s + offset);
-        size_t *src = (size_t *)(s + offset + size);
-        size_t words = (len - offset - size) / sizeof(size_t);
-
-        while(words--) {
-            *dst++ = *src++;
-        }
-
-        // Copy remaining bytes
-        char *d = (char *)dst;
-        char *p = (char *)src;
-        size = (len - offset - size) % sizeof(size_t);
-        while(size--) {
-            *d++ = *p++;
-        }
-        *d = '\0';
-    } else {
-        // For small deletions, use simple byte copy
-        _memcpy(s + offset, s + offset + size, len - offset - size + 1);
+    for(size_t i = offset; i < len - size + 1; i++) {
+        s[i] = s[i + size];
     }
-
     return s;
 }
 
@@ -631,36 +418,29 @@ static int _parser(QCliObj *cli, char *str, uint16_t len)
     char *word_start = QNULL;
     int in_word = 0;
 
-    // Ensure string ends with null terminator
     str[len] = '\0';
 
-    // Skip leading spaces
     while(token < end && *token == _KEY_SPACE) {
         token++;
     }
 
-    // Return error if string only contains spaces
     if(token >= end) {
         return -1;
     }
 
-    // Parse all words
     while(token < end) {
         if(*token == _KEY_SPACE) {
             if(in_word) {
-                // End of word
                 *token = '\0';
                 cli->argv[cli->argc++] = word_start;
                 in_word = 0;
 
-                // Check if argument count exceeds limit
                 if(cli->argc >= QCLI_CMD_ARGC_MAX) {
                     return -2;
                 }
             }
         } else {
             if(!in_word) {
-                // Start of word
                 word_start = token;
                 in_word = 1;
             }
@@ -668,7 +448,6 @@ static int _parser(QCliObj *cli, char *str, uint16_t len)
         token++;
     }
 
-    // Handle last word
     if(in_word && word_start < end) {
         if(cli->argc >= QCLI_CMD_ARGC_MAX) {
             return -2;
@@ -676,7 +455,6 @@ static int _parser(QCliObj *cli, char *str, uint16_t len)
         cli->argv[cli->argc++] = word_start;
     }
 
-    // Check if there are valid arguments
     if(cli->argc == 0) {
         return -1;
     }
@@ -743,9 +521,9 @@ int qcli_init(QCliObj *cli, QCliPrint print)
     cli->history_index = 0;
     cli->history_recall_index = 0;
     cli->history_recall_times = 0;
-    _memset(cli->history, 0, QCLI_HISTORY_MAX * QCLI_CMD_STR_MAX * sizeof(char));
-    _memset(cli->args, 0, QCLI_CMD_STR_MAX * sizeof(char));
-    _memset(&cli->argv, 0, QCLI_CMD_ARGC_MAX * sizeof(char));
+    _memset(cli->history, 0, sizeof(cli->history));
+    _memset(cli->args, 0, sizeof(cli->args));
+    _memset(&cli->argv, 0, sizeof(cli->argv));
     qcli_add(cli, &_help, "?", _help_cb, "help");
     qcli_add(cli, &_clear, "clear", _clear_cb, "clear screen");
     qcli_add(cli, &_history, "hs", _history_cb, "show history");
@@ -800,18 +578,23 @@ int qcli_remove(QCliObj *cli, QCliCmd *cmd)
     }
 }
 
+#define QCLI_HS_RECALL_DIR_PREV (-1)
+#define QCLI_HS_RECALL_DIR_NEXT (1)
+
 static void _history_navigation(QCliObj *cli, int direction)
 {
-    if((direction == -1) && (cli->history_recall_times < cli->history_num)) { // _KEY_UP
-        cli->history_recall_index = (cli->history_recall_index == 0) ? QCLI_HISTORY_MAX - 1 : cli->history_recall_index - 1;
+    if((direction == QCLI_HS_RECALL_DIR_PREV) && (cli->history_recall_times < cli->history_num)) { // _KEY_UP
+        cli->history_recall_index = (cli->history_recall_index == 0) ? cli->history_num - 1 : cli->history_recall_index - 1;
         cli->history_recall_times++;
-    } else if((direction == 1) && (cli->history_recall_times > 1)) { // _KEY_DOWN
-        cli->history_recall_index = (cli->history_recall_index + 1) % QCLI_HISTORY_MAX;
+    } else if((direction == QCLI_HS_RECALL_DIR_NEXT) && (cli->history_recall_times > 1)) { // _KEY_DOWN
+        cli->history_recall_index = (cli->history_recall_index + 1) % cli->history_num;
         cli->history_recall_times--;
     } else {
-        if((cli->history_recall_times <= 1) && cli->is_echo) {
+        if(direction == QCLI_HS_RECALL_DIR_NEXT) {
             _cli_reset_buffer(cli);
-            cli->print("%s%s", _CLEAR_LINE, _PERFIX);
+            if(cli->is_echo) {
+                cli->print("%s%s", _CLEAR_LINE, _PERFIX);
+            }
         }
         return;
     }
@@ -829,10 +612,10 @@ static void _special_key(QCliObj *cli, char c)
 {
     switch(c) {
     case _KEY_UP:
-        _history_navigation(cli, -1);
+        _history_navigation(cli, QCLI_HS_RECALL_DIR_PREV);
         break;
     case _KEY_DOWN:
-        _history_navigation(cli, 1);
+        _history_navigation(cli, QCLI_HS_RECALL_DIR_NEXT);
         break;
     case _KEY_RIGHT:
         if(cli->args_index < cli->args_size) {
@@ -854,6 +637,16 @@ static void _special_key(QCliObj *cli, char c)
         break;
     }
     cli->spacial_key = 0;
+}
+
+static void _add_to_history(QCliObj *cli, const char *cmd, uint16_t size)
+{
+    _memset(cli->history[cli->history_index], 0, QCLI_CMD_STR_MAX);
+    _memcpy(cli->history[cli->history_index], cmd, size);
+    cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
+    if(cli->history_num < QCLI_HISTORY_MAX) {
+        cli->history_num++;
+    }
 }
 
 int qcli_exec(QCliObj *cli, char c)
@@ -887,10 +680,10 @@ int qcli_exec(QCliObj *cli, char c)
 #endif
     case _KEY_BACKSPACE:
     case _KEY_DEL:
-        if(cli->args_size > 0 && cli->args_size == cli->args_index) {
+        if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
             cli->args_size--;
             cli->args_index--;
-            cli->args[cli->args_size] = '\0';
+            cli->args[cli->args_index] = '\0';
             if(cli->is_echo) {
                 cli->print("\b \b");
             }
@@ -917,14 +710,14 @@ int qcli_exec(QCliObj *cli, char c)
             cli->print("\r\n");
         }
 
-        if(_strcmp(cli->args, "hs") != 0 && !cli->is_exec_str) {
-            if(_strcmp(cli->history[(cli->history_index == 0) ? QCLI_HISTORY_MAX : (cli->history_index - 1) % QCLI_HISTORY_MAX], cli->args) != 0) {
-                _memset(cli->history[cli->history_index], 0, _strlen(cli->history[cli->history_index]));
-                _memcpy(cli->history[cli->history_index], cli->args, cli->args_size);
-                cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
-                if(cli->history_num < QCLI_HISTORY_MAX) {
-                    cli->history_num++;
+        if((_strcmp(cli->args, "hs") != 0) && !cli->is_exec_str) {
+            if(cli->history_num > 0) {
+                uint8_t last_index = (cli->history_index - 1 + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX;
+                if(_strcmp(cli->history[last_index], cli->args) != 0) {
+                    _add_to_history(cli, cli->args, cli->args_size);
                 }
+            } else {
+                _add_to_history(cli, cli->args, cli->args_size);
             }
         }
 
@@ -974,59 +767,44 @@ int qcli_exec_str(QCliObj *cli, char *str)
         return -1;
     }
 
-    // Local variables
     uint16_t argc = 0;
     char *argv[QCLI_CMD_ARGC_MAX] = { 0 };
-    char args[QCLI_CMD_STR_MAX] = { 0 };
+    char args[QCLI_CMD_STR_MAX];
     const uint16_t len = _strlen(str);
 
-    // Validate length
     if(len >= QCLI_CMD_STR_MAX) {
         return -1;
     }
 
-    // Copy input string to local buffer
     _memcpy(args, str, len);
     args[len] = '\0';
 
-    // Parse arguments
     char *token = args;
     char *end = args + len;
 
-    // Skip leading spaces
     while(token < end && *token == _KEY_SPACE) {
         token++;
     }
 
-    // Parse each token
-    while(token < end) {
-        // Add token to argv
-        if(argc >= QCLI_CMD_ARGC_MAX) {
-            return -2;
-        }
+    while(token < end && argc < QCLI_CMD_ARGC_MAX) {
         argv[argc++] = token;
 
-        // Find end of current token
         while(token < end && *token != _KEY_SPACE) {
             token++;
         }
 
-        // Replace space with null terminator
         if(token < end) {
             *token++ = '\0';
-            // Skip consecutive spaces
             while(token < end && *token == _KEY_SPACE) {
                 token++;
             }
         }
     }
 
-    // Handle empty input
     if(argc == 0) {
         return -1;
     }
 
-    // Execute command
     QCliList *node;
     QCliList *node_safe;
     QCliCmd *cmd;
@@ -1038,7 +816,7 @@ int qcli_exec_str(QCliObj *cli, char *str)
         }
     }
 
-    return -4; // Command not found
+    return -4;
 }
 
 QCliCmd *qcli_find(QCliObj *cli, const char *name)
