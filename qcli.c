@@ -275,27 +275,27 @@ static void _handle_tab_complete(QCliObj *cli)
 
     char *partial = cli->args;
     int matches = 0;
-    const char *match = QNULL;
+    const char *last_match = QNULL;
+    size_t partial_len = _strlen(partial);
 
     QCliList *node;
     QCLI_ITERATOR(node, &cli->cmds)
     {
         QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-        if(_strncmp(partial, cmd->name, _strlen(partial)) == 0) {
+        if(_strncmp(partial, cmd->name, partial_len) == 0) {
             matches++;
-            match = cmd->name;
+            last_match = cmd->name;
         }
     }
 
     if(matches == 1) {
         _memset(cli->args, 0, QCLI_CMD_STR_MAX);
-        _strcpy(cli->args, match);
-        cli->args_size = _strlen(match);
+        _strcpy(cli->args, last_match);
+        cli->args_size = _strlen(last_match);
         cli->args_index = cli->args_size;
         if(cli->is_echo) {
             cli->print("\r%s%s", _PERFIX, cli->args);
         }
-
     } else if(matches > 1) {
         if(cli->is_echo) {
             cli->print("\r\n");
@@ -303,7 +303,7 @@ static void _handle_tab_complete(QCliObj *cli)
         QCLI_ITERATOR(node, &cli->cmds)
         {
             QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-            if(_strncmp(partial, cmd->name, _strlen(partial)) == 0) {
+            if(_strncmp(partial, cmd->name, partial_len) == 0) {
                 if(cli->is_echo) {
                     cli->print("%s  ", cmd->name);
                 }

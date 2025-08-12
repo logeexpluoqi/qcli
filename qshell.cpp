@@ -256,11 +256,11 @@ int QShell::exec()
 }
 int QShell::args_help(SubCmdTable *table, size_t sz)
 {
-    uint32_t n = sz / sizeof(SubCmdTable);
+    size_t n = sz / sizeof(SubCmdTable);
     if(table == nullptr) {
         return -1;
     }
-    for(uint32_t i = 0; i < n; i++) {
+    for(size_t i = 0; i < n; i++) {
         cli.print(" -%s  %s\r\n", table[i].name, table[i].usage);
     }
     return 0;
