@@ -51,7 +51,7 @@ public:
     int stop();
     
     // Function to display help for command arguments
-    // typedef QCliArgsEntry QCliSubCmdTable;
+    // typedef QCliSubCmdTable QCliSubCmdTable;
     using SubCmdTable = QCliSubCmdTable;
     int args_help(SubCmdTable *table, size_t sz);
 

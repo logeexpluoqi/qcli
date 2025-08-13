@@ -208,52 +208,65 @@ int QShell::exec()
 {
     set_echo(false);
     running = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    while(running) {
-        int c = 0;
-        if(getch != nullptr) {
-            c = getch();
-        } else {
-            c = keyboard_getch();
-        }
-        if(c == 0 || c == EOF) {
-            continue;
-        }
-#ifdef _WIN32
-        if(c == 0xe0) {
-            qcli_exec(&cli, c);
-            int next_c = 0;
+    
+    try {
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        while(running) {
+            int c = 0;
             if(getch != nullptr) {
-                next_c = getch();
+                c = getch();
             } else {
-                next_c = keyboard_getch();
+                c = keyboard_getch();
             }
-            if(next_c != 0 && next_c != EOF) {
-                qcli_exec(&cli, next_c);
+            
+            if(c == 0 || c == EOF) {
+                continue;
             }
-            continue;
-        } else {
-            qcli_exec(&cli, c);
-        }
+            
+            if(c == 3) {
+                cli.print("\33[2K");
+                cli.print("\033[H\033[J");
+                cli.print(" \r\n#! thread_qshell input thread closed !\r\n\r\n");
+                break;
+            }
+            
+#ifdef _WIN32
+            if(c == 0xe0) {
+                qcli_exec(&cli, c);
+                int next_c = 0;
+                if(getch != nullptr) {
+                    next_c = getch();
+                } else {
+                    next_c = keyboard_getch();
+                }
+                if(next_c != 0 && next_c != EOF) {
+                    if(next_c == 3) {
+                        cli.print("\33[2K");
+                        cli.print("\033[H\033[J");
+                        cli.print(" \r\n#! thread_qshell input thread closed !\r\n\r\n");
+                        break;
+                    }
+                    qcli_exec(&cli, next_c);
+                }
+                continue;
+            } else {
+                qcli_exec(&cli, c);
+            }
 #else
-        qcli_exec(&cli, c);
+            qcli_exec(&cli, c);
 #endif
-
-        c = (c == 127) ? 8 : c;
-
-        if(c == 3) {
-            cli.print("\33[2K");
-            cli.print("\033[H\033[J");
-            cli.print(" \r\n#! thread_qshell input thread closed !\r\n\r\n");
-            running = false;
-            break;
+            
+            c = (c == 127) ? 8 : c;
         }
-
+    } catch(...) {
+        echo("QCLI: Exception\n");
     }
-
+    
     set_echo(true);
+    running = false;
     return 0;
 }
+
 int QShell::args_help(SubCmdTable *table, size_t sz)
 {
     size_t n = sz / sizeof(SubCmdTable);

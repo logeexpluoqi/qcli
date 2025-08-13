@@ -1,8 +1,8 @@
 /**
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
- * @ Modified by: Your name
- * @ Modified time: 2025-08-10 23:28:28
+ * @ Modified by: luoqi
+ * @ Modified time: 2025-05-28 17:04
  * @ Description:
  */
 
@@ -35,6 +35,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #endif
 
 #define _KEY_DEL             '\x7f'
+
 #define _QCLI_SU(n)             "\033["#n"S"   // scroll up
 #define _QCLI_SD(n)             "\033["#n"T"   // scroll down
 #define _QCLI_CUU(n)            "\033["#n"A"   // cursor up
@@ -61,7 +62,9 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 
 static inline void *_memcpy(void *dst, const void *src, size_t sz)
 {
-    if(!dst || !src) return QNULL;
+    if(!dst || !src) {
+        return NULL;
+    }
     uint8_t *d = (uint8_t *)dst;
     const uint8_t *s = (const uint8_t *)src;
     if(sz < sizeof(size_t) || d < s || d >= s + sz) {
@@ -86,7 +89,9 @@ static inline void *_memcpy(void *dst, const void *src, size_t sz)
 
 static void *_memset(void *dest, int c, size_t n)
 {
-    if(!dest) return QNULL;
+    if(!dest) {
+        return NULL;
+    }
     uint8_t *p = (uint8_t *)dest;
     uint8_t byte = (uint8_t)c;
 
@@ -98,40 +103,25 @@ static void *_memset(void *dest, int c, size_t n)
 
 static size_t _strlen(const char *s)
 {
-    if(!s) return 0;
+    if(!s) {
+        return 0;
+    }
     const char *start = s;
-    while(((uintptr_t)s & (sizeof(size_t) - 1)) && *s) {
-        s++;
-    }
-    const size_t *w = (const size_t *)s;
-    while(!(((*w) - 0x01010101UL) & ~(*w) & 0x80808080UL)) {
-        w++;
-    }
-    s = (const char *)w;
     while(*s) {
         s++;
     }
     return s - start;
 }
 
+
 static char *_strcpy(char *dest, const char *src)
 {
-    if(!dest || !src) return QNULL;
-    char *org = dest;
-    if(_strlen(src) < sizeof(size_t)) {
-        while((*dest++ = *src++));
-        return org;
+    if(!dest || !src) {
+        return NULL;
     }
-    while(((uintptr_t)dest & (sizeof(size_t) - 1)) && (*dest++ = *src++));
-    size_t *dw = (size_t *)dest;
-    const size_t *sw = (const size_t *)src;
-    while(!(((*sw) - 0x01010101UL) & ~(*sw) & 0x80808080UL)) {
-        *dw++ = *sw++;
-    }
-    dest = (char *)dw;
-    src = (const char *)sw;
-    while((*dest++ = *src++));
-    return org;
+    char *org_dest = dest;
+    while((*dest++ = *src++) != '\0');
+    return org_dest;
 }
 
 static int _strcmp(const char *s1, const char *s2)
@@ -139,85 +129,81 @@ static int _strcmp(const char *s1, const char *s2)
     if(!s1 || !s2) {
         return -1;
     }
-    if(*s1 != *s2) {
-        return *(uint8_t *)s1 - *(uint8_t *)s2;
-    }
-    if(!*s1) {
-        return 0;
-    }
-    if(_strlen(s1) < 8) {
-        while(*s1 && *s1 == *s2) {
-            s1++;
-            s2++;
-        }
-        return *(uint8_t *)s1 - *(uint8_t *)s2;
-    }
-    while(((uintptr_t)s1 & (sizeof(size_t) - 1)) && *s1 == *s2 && *s1) {
+    while(*s1 && *s2 && (*s1 == *s2)) {
         s1++;
         s2++;
     }
-    if(*s1 != *s2) {
-        return *(uint8_t *)s1 - *(uint8_t *)s2;
-    }
-    if(!*s1) {
-        return 0;
-    }
-    const size_t *w1 = (const size_t *)s1, *w2 = (const size_t *)s2;
-    while(*w1 == *w2 && !(((*w1) - 0x01010101UL) & ~(*w1) & 0x80808080UL)) {
-        w1++;
-        w2++;
-    }
-    s1 = (const char *)w1;
-    s2 = (const char *)w2;
-    while(*s1 && *s1 == *s2) {
-        s1++;
-        s2++;
-    }
-    return *(uint8_t *)s1 - *(uint8_t *)s2;
+    return *(const uint8_t *)s1 - *(const uint8_t *)s2;
 }
 
 static int _strncmp(const char *s1, const char *s2, size_t n)
 {
-    if(!n || !s1 || !s2) {
-        return n ? -1 : 0;
+    if(!s1 || !s2) {
+        return -1;
     }
-    while(n-- && *s1 && *s2 && *s1 == *s2) {
-        s1++;
-        s2++;
-    }
-    if(n == (size_t)-1) {
+
+    if(n == 0) {
         return 0;
     }
-    return *(uint8_t *)s1 - *(uint8_t *)s2;
+
+    while(n && *s1 && (*s1 == *s2)) {
+        ++s1;
+        ++s2;
+        --n;
+    }
+
+    if(n == 0) {
+        return 0;
+    }
+
+    return (*(uint8_t *)s1 - *(uint8_t *)s2);
 }
 
-static void *_strinsert(char *s, size_t offset, char *c, size_t size)
+static char *_strinsert(char *s, size_t offset, const char *c, size_t size)
 {
-    if(!s || !c || !size) return QNULL;
-    size_t len = _strlen(s);
-    if(offset > len) {
-        return QNULL;
+    if (!s || !c || !size) {
+        return NULL;
     }
-    for(int32_t i = len; i >= (int32_t)offset; i--) {
+
+    size_t len = _strlen(s);
+    if (offset > len) {
+        return NULL;
+    }
+
+    for (size_t i = len; i >= offset; i--) {
         s[i + size] = s[i];
     }
-    _memcpy(s + offset, c, size);
+
+    for (size_t i = 0; i < size; i++) {
+        s[offset + i] = c[i];
+    }
+
     return s;
 }
 
 static void *_strdelete(char *s, size_t offset, size_t size)
 {
-    if(!s || !size) return QNULL;
+    if(!s || !size) {
+        return NULL;
+    }
+
     size_t len = _strlen(s);
     if(offset >= len) {
-        return QNULL;
+        return NULL;
     }
+
     if(offset + size > len) {
         size = len - offset;
     }
-    for(size_t i = offset; i < len - size + 1; i++) {
-        s[i] = s[i + size];
+
+    char *dst = s + offset;
+    char *src = s + offset + size;
+    size_t move_size = len - offset - size + 1;
+    
+    for (size_t i = 0; i < move_size; i++) {
+        dst[i] = src[i];
     }
+
     return s;
 }
 
@@ -275,8 +261,8 @@ static void _handle_tab_complete(QCliObj *cli)
 
     char *partial = cli->args;
     int matches = 0;
-    const char *last_match = QNULL;
-    size_t partial_len = _strlen(partial);
+    const char *last_match = NULL;
+    size_t partial_len = cli->args_size;
 
     QCliList *node;
     QCLI_ITERATOR(node, &cli->cmds)
@@ -415,7 +401,7 @@ static int _parser(QCliObj *cli, char *str, uint16_t len)
     cli->argc = 0;
     char *token = str;
     char *end = str + len;
-    char *word_start = QNULL;
+    char *word_start = NULL;
     int in_word = 0;
 
     str[len] = '\0';
@@ -822,7 +808,7 @@ int qcli_exec_str(QCliObj *cli, char *str)
 QCliCmd *qcli_find(QCliObj *cli, const char *name)
 {
     if(!cli || !name) {
-        return QNULL;
+        return NULL;
     }
 
     QCliList *node;
@@ -834,7 +820,7 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name)
         }
     }
 
-    return QNULL;
+    return NULL;
 }
 
 int qcli_subcmd_hdl(int argc, char **argv, const QCliSubCmdTable *table, size_t table_size)

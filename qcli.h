@@ -2,7 +2,7 @@
  * @ Author: luoqi
  * @ Create Time: 2024-08-01 22:16
  * @ Modified by: luoqi
- * @ Modified time: 2025-08-08 00:21
+ * @ Modified time: 2025-05-28 16:32
  * @ Description:
  */
 
@@ -38,10 +38,6 @@ typedef struct _list{
 #endif
 
 #define QCLI_PRINT(cli, ...)    (cli->print(__VA_ARGS__))
-
-#ifndef QNULL 
-#define QNULL ((void *)0)
-#endif
 
 typedef enum {
     QCLI_ERR_PARAM_UNKONWN = -5,
