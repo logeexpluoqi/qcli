@@ -26,7 +26,7 @@
 
 #define ISARGC(n) (argc == n)
 
-#define QCLI_SUBCMD_HANDLER(cli, sub_cmd_table)                                       \
+#define QCLI_SUBCMD_HANDLER(cli, sub_cmd_table)                                         \
         if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
             return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
         } else {                                                                        \
