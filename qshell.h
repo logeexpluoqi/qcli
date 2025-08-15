@@ -26,6 +26,13 @@
 
 #define ISARGC(n) (argc == n)
 
+#define QCLI_SUBCMD_HANDLER(cli, sub_cmd_table)                                       \
+        if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
+            return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
+        } else {                                                                        \
+            return cli.args_handle(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));   \
+        }
+
 class QShell {
 public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
