@@ -37,8 +37,6 @@ typedef struct _list{
 #define QCLI_SHOW_TITLE     0
 #endif
 
-#define QCLI_PRINT(cli, ...)    (cli->print(__VA_ARGS__))
-
 typedef enum {
     QCLI_ERR_PARAM_UNKONWN = -5,
     QCLI_ERR_PARAM_TYPE = -4,
@@ -48,9 +46,21 @@ typedef enum {
     QCLI_EOK = 0,
 } QCliError;
 
+typedef int (*QCliCallback)(int, char **);
 typedef int (*QCliPrint)(const char *fmt, ...);
 
-typedef struct {
+typedef struct QCliObj QCliObj;
+typedef struct QCliCmd QCliCmd;
+
+struct QCliCmd {
+    QCliObj *cli;
+    const char *name;
+    QCliCallback cb;
+    const char *usage;
+    QCliList node;
+};
+
+struct QCliObj {
     char args[QCLI_CMD_STR_MAX + 1];
     char *argv[QCLI_CMD_ARGC_MAX + 1];
     char history[QCLI_HISTORY_MAX + 1][QCLI_CMD_STR_MAX + 1];
@@ -65,18 +75,14 @@ typedef struct {
     uint8_t spacial_key;
     int argc;
     QCliPrint print;
+    
+    QCliCmd _echo;
+    QCliCmd _history;
+    QCliCmd _help;
+    QCliCmd _clear;
+
     QCliList cmds;
-} QCliObj;
-
-typedef int (*QCliCallback)(int, char **);
-
-typedef struct {
-    QCliObj *cli;
-    const char *name;
-    QCliCallback cb;
-    const char *usage;
-    QCliList node;
-} QCliCmd;
+};
 
 typedef struct {
     const char *name;

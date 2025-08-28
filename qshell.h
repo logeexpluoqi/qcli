@@ -26,7 +26,7 @@
 
 #define ISARGC(n) (argc == n)
 
-#define QCLI_SUBCMD_HANDLER(cli, sub_cmd_table)                                         \
+#define QCLI_SUBCMD_HANDLER(cli, argc, argv, sub_cmd_table)                                         \
         if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
             return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
         } else {                                                                        \
@@ -38,9 +38,11 @@ public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
     typedef int (*GetChFunc)(void);
     QShell(QCliPrint print, GetChFunc getch);
-
+    QShell() = default;
     // Destructor for QShell, cleans up resources
     ~QShell();
+
+    void init(QCliPrint print, GetChFunc getch);
 
     // Starts the shell thread
     int start();
@@ -76,10 +78,14 @@ public:
 
     int exec();
 
+    int exec(char c);
+
     void title();
 private:
+    // Shell initialization flag
+    bool inited = false;
     // Thread object for running the shell
-    std::thread thread_qshell;
+    std::thread thr;
 
     // Atomic boolean to control the running state of the shell
     std::atomic<bool> running{ false };

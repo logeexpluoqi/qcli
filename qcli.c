@@ -161,20 +161,20 @@ static int _strncmp(const char *s1, const char *s2, size_t n)
 
 static char *_strinsert(char *s, size_t offset, const char *c, size_t size)
 {
-    if (!s || !c || !size) {
+    if(!s || !c || !size) {
         return NULL;
     }
 
     size_t len = _strlen(s);
-    if (offset > len) {
+    if(offset > len) {
         return NULL;
     }
 
-    for (size_t i = len; i >= offset; i--) {
+    for(size_t i = len; i >= offset; i--) {
         s[i + size] = s[i];
     }
 
-    for (size_t i = 0; i < size; i++) {
+    for(size_t i = 0; i < size; i++) {
         s[offset + i] = c[i];
     }
 
@@ -199,8 +199,8 @@ static void *_strdelete(char *s, size_t offset, size_t size)
     char *dst = s + offset;
     char *src = s + offset + size;
     size_t move_size = len - offset - size + 1;
-    
-    for (size_t i = 0; i < move_size; i++) {
+
+    for(size_t i = 0; i < move_size; i++) {
         dst[i] = src[i];
     }
 
@@ -301,57 +301,52 @@ static void _handle_tab_complete(QCliObj *cli)
     }
 }
 
-static QCliCmd _history;
 static int _history_cb(int argc, char **argv)
 {
     UNUSED(argc);
-    UNUSED(argv);
-    for(uint8_t i = _history.cli->history_num; i > 0; i--) {
-        _history.cli->print("%2d: %s\r\n", i, _history.cli->history[(_history.cli->history_index - i + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX]);
+    QCliObj *cli = (QCliObj *)argv[1];
+    for(uint8_t i = cli->history_num; i > 0; i--) {
+        cli->print("%2d: %s\r\n", i, cli->history[(cli->history_index - i + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX]);
     }
 
     return 0;
 }
 
-static QCliCmd _echo;
 static int _echo_cb(int argc, char **argv)
 {
-    if(argc == 2) {
-        if(_strcmp(argv[1], "on") == 0) {
-            _echo.cli->is_echo = 1;
-        } else if(_strcmp(argv[1], "off") == 0) {
-            _echo.cli->is_echo = 0;
-        }
+    UNUSED(argc);
+    QCliObj *cli = (QCliObj *)argv[2];
+    if(_strcmp(argv[1], "on") == 0) {
+        cli->is_echo = 1;
+    } else if(_strcmp(argv[1], "off") == 0) {
+        cli->is_echo = 0;
     } else {
-        if(_echo.cli->is_echo) {
-            _echo.cli->print(" echo on/off\r\n");
-        }
+        cli->print(" echo on/off\r\n");
     }
 
     return 0;
 }
 
-
-static QCliCmd _help;
 #define QCLI_USAGE_DISP_MAX 80
 static int _help_cb(int argc, char **argv)
 {
     UNUSED(argc);
-    UNUSED(argv);
 
-    if(!_help.cli->is_echo) {
+    QCliObj *cli = (QCliObj *)argv[1];
+
+    if(!cli->is_echo) {
         return 0;
     }
 
-    _help.cli->print("  Commands       Usage \r\n");
-    _help.cli->print(" ----------     -------\r\n");
+    cli->print("  Commands       Usage \r\n");
+    cli->print(" ----------     -------\r\n");
 
     QCliList *node;
-    QCLI_ITERATOR(node, &_help.cli->cmds)
+    QCLI_ITERATOR(node, &cli->cmds)
     {
         QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
 
-        _help.cli->print(" .%-9s     - ", cmd->name);
+        cli->print(" .%-9s     - ", cmd->name);
 
         const char *usage = cmd->usage;
         size_t remain_len = _strlen(usage);
@@ -363,10 +358,10 @@ static int _help_cb(int argc, char **argv)
                 QCLI_USAGE_DISP_MAX : remain_len;
 
             if(first_line) {
-                _help.cli->print("%-.*s\r\n", print_len, usage);
+                cli->print("%-.*s\r\n", print_len, usage);
                 first_line = 0;
             } else {
-                _help.cli->print("                   %-.*s\r\n",
+                cli->print("                   %-.*s\r\n",
                     print_len, usage + offset);
             }
 
@@ -378,16 +373,15 @@ static int _help_cb(int argc, char **argv)
     return QCLI_EOK;
 }
 
-static QCliCmd _clear;
 static int _clear_cb(int argc, char **argv)
 {
     UNUSED(argc);
-    UNUSED(argv);
-    if(!_clear.cli->is_echo) {
+    QCliObj *cli = (QCliObj *)argv[1];
+    if(!cli->is_echo) {
         return 0;
     }
 
-    _clear.cli->print(_CLEAR_DISP);
+    cli->print(_CLEAR_DISP);
 
     return 0;
 }
@@ -461,7 +455,15 @@ static int _cmd_callback(QCliObj *cli)
     {
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
         if(_strcmp(cli->argv[0], _cmd->name) == 0) {
-            result = _cmd->cb(cli->argc, cli->argv);
+            if((_strcmp(_cmd->name, "?") == 0) ||
+                (_strcmp(_cmd->name, "hs") == 0) ||
+                (_strcmp(_cmd->name, "echo") == 0) ||
+                (_strcmp(_cmd->name, "clear") == 0)) {
+                cli->argv[cli->argc++] = (char *)cli;
+                result = _cmd->cb(cli->argc, cli->argv);
+            } else {
+                result = _cmd->cb(cli->argc, cli->argv);
+            }
             if(!cli->is_echo) {
                 return 0;
             }
@@ -510,10 +512,10 @@ int qcli_init(QCliObj *cli, QCliPrint print)
     _memset(cli->history, 0, sizeof(cli->history));
     _memset(cli->args, 0, sizeof(cli->args));
     _memset(&cli->argv, 0, sizeof(cli->argv));
-    qcli_add(cli, &_help, "?", _help_cb, "help");
-    qcli_add(cli, &_clear, "clear", _clear_cb, "clear screen");
-    qcli_add(cli, &_history, "hs", _history_cb, "show history");
-    qcli_add(cli, &_echo, "echo", _echo_cb, "echo off or on");
+    qcli_add(cli, &cli->_help, "?", _help_cb, "help");
+    qcli_add(cli, &cli->_clear, "clear", _clear_cb, "clear screen");
+    qcli_add(cli, &cli->_history, "hs", _history_cb, "show history");
+    qcli_add(cli, &cli->_echo, "echo", _echo_cb, "echo off or on");
 
 #if QCLI_SHOW_TITLE
     qcli_title(cli);

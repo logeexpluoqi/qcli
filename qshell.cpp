@@ -77,6 +77,7 @@ QShell::QShell(QCliPrint print, GetChFunc getch)
 {
     this->getch = getch;
     qcli_init(&cli, print);
+    inited = true;
 }
 
 QShell::~QShell()
@@ -90,11 +91,22 @@ QShell::~QShell()
     stop();
 }
 
+void QShell::init(QCliPrint print, GetChFunc getch)
+{
+    this->getch = getch;
+    qcli_init(&cli, print);
+    inited = true;
+}
+
 int QShell::start()
 {
-    thread_qshell = std::thread([this]()->int { return this->exec(); });
-    if(thread_qshell.joinable()) {
-        thread_qshell.detach();
+    if(!inited) {
+        return -1;
+    }
+
+    thr = std::thread([this]()->int { return this->exec(); });
+    if(thr.joinable()) {
+        thr.detach();
     } else {
         return -1;
     }
@@ -104,8 +116,8 @@ int QShell::start()
 int QShell::stop()
 {
     running = false;
-    if(thread_qshell.joinable()) {
-        thread_qshell.join();
+    if(thr.joinable()) {
+        thr.join();
     }
     return 0;
 }
@@ -226,7 +238,7 @@ int QShell::exec()
             if(c == 3) {
                 cli.print("\33[2K");
                 cli.print("\033[H\033[J");
-                cli.print(" \r\n#! thread_qshell input thread closed !\r\n\r\n");
+                cli.print(" \r\n#! thr input thread closed !\r\n\r\n");
                 break;
             }
             
@@ -243,7 +255,7 @@ int QShell::exec()
                     if(next_c == 3) {
                         cli.print("\33[2K");
                         cli.print("\033[H\033[J");
-                        cli.print(" \r\n#! thread_qshell input thread closed !\r\n\r\n");
+                        cli.print(" \r\n#! thr input thread closed !\r\n\r\n");
                         break;
                     }
                     qcli_exec(&cli, next_c);
@@ -264,6 +276,12 @@ int QShell::exec()
     
     set_echo(true);
     running = false;
+    return 0;
+}
+
+int QShell::exec(char c)
+{
+    qcli_exec(&cli, c);
     return 0;
 }
 
