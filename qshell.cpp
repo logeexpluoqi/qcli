@@ -11,6 +11,8 @@
 #include <conio.h>
 #else
 #include <termios.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
 #endif
 #include <iterator>
@@ -30,14 +32,15 @@ void set_echo(bool enable)
     }
     SetConsoleMode(hStdin, mode);
 #else
-    struct termios tty;
-    tcgetattr(STDIN_FILENO, &tty);
+    int retval = 0;
     if(!enable) {
-        tty.c_lflag &= ~ECHO;
+        retval = system("stty raw -echo");
     } else {
-        tty.c_lflag |= ECHO;
+        retval = system("stty -raw -echo");
     }
-    tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+    if(retval != 0) {
+        printf("set echo failed\n");
+    }
 #endif
 }
 
@@ -62,13 +65,7 @@ int keyboard_getch()
 
     SetConsoleMode(hStdin, mode);
 #else
-    struct timeval tv = { 0, 5000 };
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(STDIN_FILENO, &fds);
-    if(select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv) > 0) {
-        c = getchar();
-    }
+    c = getchar();
 #endif
     return c;
 }
@@ -192,7 +189,7 @@ int QShell::cmd_del(const char *name)
     if(name == nullptr) {
         return -1;
     }
-    
+
     QCliCmd *cmd = qcli_find(&cli, name);
     if(qcli_remove(&cli, cmd) == 0) {
         for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
@@ -220,9 +217,9 @@ int QShell::exec()
 {
     set_echo(false);
     running = true;
-    
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     try {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
         while(running) {
             int c = 0;
             if(getch != nullptr) {
@@ -230,18 +227,16 @@ int QShell::exec()
             } else {
                 c = keyboard_getch();
             }
-            
             if(c == 0 || c == EOF) {
                 continue;
             }
-            
-            if(c == 3) {
+            if(c == 3) { // ctrl+c
                 cli.print("\33[2K");
                 cli.print("\033[H\033[J");
-                cli.print(" \r\n#! thr input thread closed !\r\n\r\n");
+                cli.print(" \r\n#! QCLI Exit !\r\n");
                 break;
             }
-            
+
 #ifdef _WIN32
             if(c == 0xe0) {
                 qcli_exec(&cli, c);
@@ -255,7 +250,7 @@ int QShell::exec()
                     if(next_c == 3) {
                         cli.print("\33[2K");
                         cli.print("\033[H\033[J");
-                        cli.print(" \r\n#! thr input thread closed !\r\n\r\n");
+                        cli.print(" \r\n#! QCLI Exit !\r\n");
                         break;
                     }
                     qcli_exec(&cli, next_c);
@@ -265,15 +260,30 @@ int QShell::exec()
                 qcli_exec(&cli, c);
             }
 #else
-            qcli_exec(&cli, c);
+            if(c == 27) {
+                qcli_exec(&cli, c);
+                int next_c1 = keyboard_getch();
+                if(next_c1 != 0 && next_c1 != EOF) {
+                    qcli_exec(&cli, next_c1);
+                    if(next_c1 == 91) {
+                        int next_c2 = keyboard_getch();
+                        if(next_c2 != 0 && next_c2 != EOF) {
+                            qcli_exec(&cli, next_c2);
+                        }
+                    }
+                }
+                continue;
+            } else {
+                qcli_exec(&cli, c);
+            }
 #endif
-            
             c = (c == 127) ? 8 : c;
         }
-    } catch(...) {
+    }
+    catch(...) {
         echo("QCLI: Exception\n");
     }
-    
+
     set_echo(true);
     running = false;
     return 0;
