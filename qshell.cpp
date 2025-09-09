@@ -233,7 +233,7 @@ int QShell::exec()
             if(c == 3) { // ctrl+c
                 cli.print("\33[2K");
                 cli.print("\033[H\033[J");
-                cli.print(" \r\n#! QCLI Exit !\r\n");
+                cli.print(" \r\n#! qcli thread exit !\r\n");
                 break;
             }
 
@@ -281,7 +281,7 @@ int QShell::exec()
         }
     }
     catch(...) {
-        echo("QCLI: Exception\n");
+        echo(" #! qcli thread: Exception\n");
     }
 
     set_echo(true);
