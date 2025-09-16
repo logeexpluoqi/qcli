@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include <cstring>
+#include <functional>
 #include "qcli.h"
 
 #define ISARG(str1, str2) ((str1) != nullptr && (str2) != nullptr && strcmp((str1), (str2)) == 0)
@@ -37,12 +38,15 @@ class QShell {
 public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
     typedef int (*GetChFunc)(void);
+    using Hook = std::function<void()>;
     QShell(QCliPrint print, GetChFunc getch);
     QShell() = default;
     // Destructor for QShell, cleans up resources
     ~QShell();
 
     void init(QCliPrint print, GetChFunc getch);
+
+    void exit_hook_set(Hook hook);
 
     // Starts the shell thread
     int start();
@@ -84,6 +88,9 @@ public:
 private:
     // Shell initialization flag
     bool inited = false;
+    
+    Hook on_exit;
+
     // Thread object for running the shell
     std::thread thr;
 

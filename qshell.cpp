@@ -36,7 +36,7 @@ void set_echo(bool enable)
     if(!enable) {
         retval = system("stty raw -echo");
     } else {
-        retval = system("stty -raw -echo");
+        retval = system("stty -raw echo");
     }
     if(retval != 0) {
         printf("set echo failed\n");
@@ -281,11 +281,17 @@ int QShell::exec()
         }
     }
     catch(...) {
-        echo(" #! qcli thread: Exception\n");
+        echo(" #!qcli thread: Exception\n");
     }
 
     set_echo(true);
     running = false;
+    if(thr.joinable()) {
+        thr.join();
+    }
+    if(on_exit) {
+        on_exit();
+    }
     return 0;
 }
 
@@ -315,4 +321,9 @@ int QShell::args_handle(int argc, char **argv, const SubCmdTable *table, size_t 
 void QShell::title(void)
 {
     qcli_title(&cli);
+}
+
+void QShell::exit_hook_set(Hook hook)
+{
+    on_exit = hook;
 }
