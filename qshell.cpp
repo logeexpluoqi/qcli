@@ -85,7 +85,7 @@ QShell::~QShell()
         delete cmd;
     }
     cmds_addr.clear();
-    stop();
+    exit();
 }
 
 void QShell::init(QCliPrint print, GetChFunc getch)
@@ -101,7 +101,7 @@ int QShell::start()
         return -1;
     }
 
-    thr = std::thread([this]()->int { return this->exec(); });
+    thr = std::thread(&QShell::exec, this);
     if(thr.joinable()) {
         thr.detach();
     } else {
@@ -110,12 +110,12 @@ int QShell::start()
     return 0;
 }
 
-int QShell::stop()
+int QShell::exit()
 {
-    running = false;
     if(thr.joinable()) {
         thr.join();
     }
+    is_exit = true;
     return 0;
 }
 
@@ -204,7 +204,7 @@ int QShell::cmd_del(const char *name)
     return 0;
 }
 
-int QShell::exec(std::string str)
+int QShell::exec_s(std::string str)
 {
     if(str.empty()) {
         return -1;
@@ -213,89 +213,78 @@ int QShell::exec(std::string str)
     return 0;
 }
 
-int QShell::exec()
+void QShell::exec()
 {
     set_echo(false);
-    running = true;
 
     std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    try {
-        while(running) {
-            int c = 0;
-            if(getch != nullptr) {
-                c = getch();
-            } else {
-                c = keyboard_getch();
-            }
-            if(c == 0 || c == EOF) {
-                continue;
-            }
-            if(c == 3) { // ctrl+c
-                cli.print("\33[2K");
-                cli.print("\033[H\033[J");
-                cli.print(" \r\n#! qcli thread exit !\r\n");
-                break;
-            }
+    while(!is_exit) {
+        int c = 0;
+        if(getch != nullptr) {
+            c = getch();
+        } else {
+            c = keyboard_getch();
+        }
+        if(c == 0 || c == EOF) {
+            continue;
+        }
+        if(c == 3) { // ctrl+c
+            cli.print("\33[2K");
+            cli.print("\033[H\033[J");
+            cli.print(" \r\n#! qcli thread exit !\r\n");
+            break;
+        }
 
 #ifdef _WIN32
-            if(c == 0xe0) {
-                qcli_exec(&cli, c);
-                int next_c = 0;
-                if(getch != nullptr) {
-                    next_c = getch();
-                } else {
-                    next_c = keyboard_getch();
-                }
-                if(next_c != 0 && next_c != EOF) {
-                    if(next_c == 3) {
-                        cli.print("\33[2K");
-                        cli.print("\033[H\033[J");
-                        cli.print(" \r\n#! QCLI Exit !\r\n");
-                        break;
-                    }
-                    qcli_exec(&cli, next_c);
-                }
-                continue;
+        if(c == 0xe0) {
+            qcli_exec(&cli, c);
+            int next_c = 0;
+            if(getch != nullptr) {
+                next_c = getch();
             } else {
-                qcli_exec(&cli, c);
+                next_c = keyboard_getch();
             }
-#else
-            if(c == 27) {
-                qcli_exec(&cli, c);
-                int next_c1 = keyboard_getch();
-                if(next_c1 != 0 && next_c1 != EOF) {
-                    qcli_exec(&cli, next_c1);
-                    if(next_c1 == 91) {
-                        int next_c2 = keyboard_getch();
-                        if(next_c2 != 0 && next_c2 != EOF) {
-                            qcli_exec(&cli, next_c2);
-                        }
-                    }
+            if(next_c != 0 && next_c != EOF) {
+                if(next_c == 3) {
+                    cli.print("\33[2K");
+                    cli.print("\033[H\033[J");
+                    cli.print(" \r\n#! QCLI Exit !\r\n");
+                    break;
                 }
-                continue;
-            } else {
-                qcli_exec(&cli, c);
+                qcli_exec(&cli, next_c);
             }
-#endif
-            c = (c == 127) ? 8 : c;
+            continue;
+        } else {
+            qcli_exec(&cli, c);
         }
+#else
+        if(c == 27) {
+            qcli_exec(&cli, c);
+            int next_c1 = keyboard_getch();
+            if(next_c1 != 0 && next_c1 != EOF) {
+                qcli_exec(&cli, next_c1);
+                if(next_c1 == 91) {
+                    int next_c2 = keyboard_getch();
+                    if(next_c2 != 0 && next_c2 != EOF) {
+                        qcli_exec(&cli, next_c2);
+                    }
+                }
+            }
+            continue;
+        } else {
+            qcli_exec(&cli, c);
+        }
+#endif
+        c = (c == 127) ? 8 : c;
     }
-    catch(...) {
-        echo(" #!qcli thread: Exception\n");
-    }
-
     set_echo(true);
-    running = false;
-    if(thr.joinable()) {
-        thr.join();
-    }
+
     if(on_exit) {
         on_exit();
     }
-    return 0;
 }
 
-int QShell::exec(char c)
+int QShell::exec_c(char c)
 {
     qcli_exec(&cli, c);
     return 0;

@@ -61,8 +61,8 @@ public:
     int cmd_del(const char *name);
 
     // Stops the shell thread
-    int stop();
-    
+    int exit();
+
     // Function to display help for command arguments
     // typedef QCliSubCmdTable QCliSubCmdTable;
     using SubCmdTable = QCliSubCmdTable;
@@ -78,24 +78,22 @@ public:
 
     int str(const char *fmt, ...);
 
-    int exec(std::string str);
+    int exec_s(std::string str);
 
-    int exec();
+    void exec();
 
-    int exec(char c);
+    int exec_c(char c);
 
     void title();
 private:
     // Shell initialization flag
     bool inited = false;
-    
+
     Hook on_exit;
 
     // Thread object for running the shell
     std::thread thr;
-
-    // Atomic boolean to control the running state of the shell
-    std::atomic<bool> running{ false };
+    bool is_exit{ false };
 
     // CLI object for handling command line interface operations
     QCliObj cli;
@@ -108,7 +106,8 @@ private:
 
 class QShellSingleton {
 public:
-    static QShell& instance() {
+    static QShell &instance()
+    {
         static QShell instance(std::printf, nullptr);
         return instance;
     }
@@ -116,8 +115,8 @@ public:
 private:
     QShellSingleton() = default;
     ~QShellSingleton() = default;
-    QShellSingleton(const QShellSingleton&) = delete;
-    QShellSingleton& operator=(const QShellSingleton&) = delete;
+    QShellSingleton(const QShellSingleton &) = delete;
+    QShellSingleton &operator=(const QShellSingleton &) = delete;
 };
 
 #endif
