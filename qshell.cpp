@@ -36,7 +36,7 @@ void set_echo(bool enable)
     if(!enable) {
         retval = system("stty raw -echo");
     } else {
-        retval = system("stty -raw echo");
+        retval = system("stty sane");
     }
     if(retval != 0) {
         printf("set echo failed\n");
