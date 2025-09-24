@@ -6,11 +6,6 @@
  * @ Description:
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <stdlib.h>
-#include <stdint.h>
 #include "qshell.h"
 
 static QShell &cli = QShellSingleton::instance();
