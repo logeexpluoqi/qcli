@@ -74,9 +74,9 @@ public:
     int args_handle(int argc, char **argv, const SubCmdTable *table, size_t table_size);
 
     // Prints a string to the shell output
-    int echo(const char *fmt, ...);
+    int println(const char *fmt, ...);
 
-    int str(const char *fmt, ...);
+    int print(const char *fmt, ...);
 
     int exec_s(std::string str);
 

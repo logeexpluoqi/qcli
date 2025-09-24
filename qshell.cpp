@@ -39,7 +39,7 @@ void set_echo(bool enable)
         retval = system("stty sane");
     }
     if(retval != 0) {
-        printf("set echo failed\n");
+        printf("set echo failed\r\n");
     }
 #endif
 }
@@ -119,53 +119,77 @@ int QShell::exit()
     return 0;
 }
 
-int QShell::echo(const char *fmt, ...)
+int QShell::println(const char *fmt, ...)
 {
     if(fmt == nullptr) {
         return -1;
     }
-    va_list args;
-    va_start(args, fmt);
-
-    std::string buf(128, '\0');
-    int needed = vsnprintf(&buf[0], buf.size(), fmt, args);
-    if(needed >= static_cast<int>(buf.size())) {
-        buf.resize(needed + 1);
-        vsnprintf(&buf[0], buf.size(), fmt, args);
+    
+    va_list args1, args2;
+    va_start(args1, fmt);
+    va_copy(args2, args1);
+    
+    int len = vsnprintf(nullptr, 0, fmt, args1);
+    va_end(args1);
+    
+    if(len < 0) {
+        va_end(args2);
+        return -1;
     }
-    va_end(args);
+    
+    std::vector<char> buf(len + 1);
+    
+    int sz = vsnprintf(buf.data(), len + 1, fmt, args2);
+    va_end(args2);
 
-    buf.resize(strlen(buf.c_str()));
-    if(buf.empty()) {
+    if(sz < 0) {
+        cli.print(" #! QShell::echo: vsnprintf failed\r\n");
+        return -1;
+    }
+    
+    if(sz != len) {
+        cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
     }
 
-    cli.print("%s\r\n", buf.c_str());
+    cli.print("%s\r\n", buf.data());
     return 0;
 }
 
-int QShell::str(const char *fmt, ...)
+int QShell::print(const char *fmt, ...)
 {
     if(fmt == nullptr) {
         return -1;
     }
-    va_list args;
-    va_start(args, fmt);
-
-    std::string buf(128, '\0');
-    int needed = vsnprintf(&buf[0], buf.size(), fmt, args);
-    if(needed >= static_cast<int>(buf.size())) {
-        buf.resize(needed + 1);
-        vsnprintf(&buf[0], buf.size(), fmt, args);
+    
+    va_list args1, args2;
+    va_start(args1, fmt);
+    va_copy(args2, args1);
+    
+    int len = vsnprintf(nullptr, 0, fmt, args1);
+    va_end(args1);
+    
+    if(len < 0) {
+        va_end(args2);
+        return -1;
     }
-    va_end(args);
+    
+    std::vector<char> buf(len + 1);
+    
+    int sz = vsnprintf(buf.data(), len + 1, fmt, args2);
+    va_end(args2);
 
-    buf.resize(strlen(buf.c_str()));
-    if(buf.empty()) {
+    if(sz < 0) {
+        cli.print(" #! QShell::echo: vsnprintf failed\r\n");
+        return -1;
+    }
+    
+    if(sz != len) {
+        cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
     }
 
-    cli.print("%s", buf.c_str());
+    cli.print("%s", buf.data());
     return 0;
 }
 
