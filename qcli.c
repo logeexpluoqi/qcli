@@ -538,7 +538,12 @@ int qcli_title(QCliObj *cli)
         return -1;
     }
     cli->print(_CLEAR_DISP);
-    cli->print("-------------------QCLI BY LUOQI-------------------\r\n");
+    cli->print("  ___   _  _          _ _\r\n");
+    cli->print(" / _ \\ | || |__   ___| | |\r\n");
+    cli->print("| | | / __) '_ \\ / _ \\ | |\r\n");
+    cli->print("| |_| \\__ \\ | | |  __/ | |\r\n");
+    cli->print(" \\__\\_(   /_| |_|\\___|_|_|\r\n");
+    cli->print("       |_|   >$ by: luoqi\r\n");
     cli->print(_PERFIX);
     return 0;
 }
