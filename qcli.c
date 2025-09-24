@@ -303,7 +303,9 @@ static void _handle_tab_complete(QCliObj *cli)
 
 static int _history_cb(int argc, char **argv)
 {
-    UNUSED(argc);
+    if(argc != 2) {
+        return QCLI_ERR_PARAM;
+    }
     QCliObj *cli = (QCliObj *)argv[1];
     for(uint8_t i = cli->history_num; i > 0; i--) {
         cli->print("%2d: %s\r\n", i, cli->history[(cli->history_index - i + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX]);
@@ -314,7 +316,9 @@ static int _history_cb(int argc, char **argv)
 
 static int _echo_cb(int argc, char **argv)
 {
-    UNUSED(argc);
+    if(argc == 2) {
+        return QCLI_ERR_PARAM;
+    }
     QCliObj *cli = (QCliObj *)argv[2];
     if(_strcmp(argv[1], "on") == 0) {
         cli->is_echo = 1;
@@ -330,7 +334,9 @@ static int _echo_cb(int argc, char **argv)
 #define QCLI_USAGE_DISP_MAX 80
 static int _help_cb(int argc, char **argv)
 {
-    UNUSED(argc);
+    if(argc != 2) {
+        return QCLI_ERR_PARAM;
+    }
 
     QCliObj *cli = (QCliObj *)argv[1];
 
@@ -375,7 +381,9 @@ static int _help_cb(int argc, char **argv)
 
 static int _clear_cb(int argc, char **argv)
 {
-    UNUSED(argc);
+    if(argc != 2) {
+        return QCLI_ERR_PARAM;
+    }
     QCliObj *cli = (QCliObj *)argv[1];
     if(!cli->is_echo) {
         return 0;
