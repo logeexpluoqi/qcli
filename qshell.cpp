@@ -320,8 +320,13 @@ int QShell::args_help(SubCmdTable *table, size_t sz)
     if(table == nullptr) {
         return -1;
     }
+    size_t l = 0;
     for(size_t i = 0; i < n; i++) {
-        cli.print(" -%s  %s\r\n", table[i].name, table[i].usage);
+        l = std::max(l, strlen(table[i].name));
+    }
+
+    for(size_t i = 0; i < n; i++) {
+        cli.print(" -%-*s  %s\r\n", l, table[i].name, table[i].usage);
     }
     return 0;
 }
