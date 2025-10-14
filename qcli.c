@@ -344,15 +344,27 @@ static int _help_cb(int argc, char **argv)
         return 0;
     }
 
-    cli->print("  Commands       Usage \r\n");
-    cli->print(" ----------     -------\r\n");
-
     QCliList *node;
+
+    int l = 0;
+    QCLI_ITERATOR(node, &cli->cmds)
+    {
+        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+        int _l = _strlen(cmd->name);
+        if(_l > l) {
+            l = _l;
+        }
+    }
+
+    cli->print("  Commands%-*s   Usage \r\n", l, "");
+    cli->print(" ----------%-*s----------\r\n", l, "");
+
+
     QCLI_ITERATOR(node, &cli->cmds)
     {
         QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
 
-        cli->print(" .%-9s     - ", cmd->name);
+        cli->print(" -%-*s       ", l, cmd->name);
 
         const char *usage = cmd->usage;
         size_t remain_len = _strlen(usage);
@@ -670,15 +682,15 @@ int qcli_exec(QCliObj *cli, char c)
     }
 
     switch(c) {
-#ifdef _WIN32
+    #ifdef _WIN32
     case '\xe0':
         cli->spacial_key = 2;
         return 0;
-#else
+    #else
     case '\x1b':
         cli->spacial_key = 1;
         return 0;
-#endif
+    #endif
     case _KEY_BACKSPACE:
     case _KEY_DEL:
         if((cli->args_size > 0) && (cli->args_size == cli->args_index)) {
