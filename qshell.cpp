@@ -314,9 +314,9 @@ int QShell::exec_c(char c)
     return 0;
 }
 
-int QShell::args_help(SubCmdTable *table, size_t sz)
+int QShell::args_help(ArgsTable *table, size_t sz)
 {
-    size_t n = sz / sizeof(SubCmdTable);
+    size_t n = sz / sizeof(ArgsTable);
     if(table == nullptr) {
         return -1;
     }
@@ -331,7 +331,7 @@ int QShell::args_help(SubCmdTable *table, size_t sz)
     return 0;
 }
 
-int QShell::args_handle(int argc, char **argv, const SubCmdTable *table, size_t table_size)
+int QShell::args_handle(int argc, char **argv, const ArgsTable *table, size_t table_size)
 {
     return qcli_subcmd_hdl(argc, argv, table, table_size);
 }

@@ -850,13 +850,13 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name)
     return NULL;
 }
 
-int qcli_subcmd_hdl(int argc, char **argv, const QCliSubCmdTable *table, size_t table_size)
+int qcli_subcmd_hdl(int argc, char **argv, const QCliArgsTable *table, size_t table_size)
 {
     if(!table || argc < 2) {
         return QCLI_ERR_PARAM;
     }
 
-    size_t n = table_size / sizeof(QCliSubCmdTable);
+    size_t n = table_size / sizeof(QCliArgsTable);
 
     argc -= 1;
     for(size_t i = 0; i < n; i++) {

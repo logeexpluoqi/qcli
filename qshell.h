@@ -27,7 +27,7 @@
 
 #define ISARGC(n) (argc == n)
 
-#define QCLI_SUBCMD_HANDLER(cli, argc, argv, sub_cmd_table)                                         \
+#define ARGS_TABLE_HANDLE(cli, argc, argv, sub_cmd_table)                                         \
         if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
             return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
         } else {                                                                        \
@@ -37,6 +37,7 @@
 class QShell {
 public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
+    using ArgsTable = QCliArgsTable;
     typedef int (*GetChFunc)(void);
     using Hook = std::function<void()>;
     QShell(QCliPrint print, GetChFunc getch);
@@ -64,14 +65,13 @@ public:
     int exit();
 
     // Function to display help for command arguments
-    // typedef QCliSubCmdTable QCliSubCmdTable;
-    using SubCmdTable = QCliSubCmdTable;
-    int args_help(SubCmdTable *table, size_t sz);
+    // typedef QCliArgsTable QCliArgsTable;
+    int args_help(ArgsTable *table, size_t sz);
 
     // Function to handle command arguments
     // argc: Number of this second arguments, skip the first argument(command name)
     // argv: Array of argument strings, skip the first argument(command name)
-    int args_handle(int argc, char **argv, const SubCmdTable *table, size_t table_size);
+    int args_handle(int argc, char **argv, const ArgsTable *table, size_t table_size);
 
     // Prints a string to the shell output
     int println(const char *fmt, ...);

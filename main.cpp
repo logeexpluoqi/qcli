@@ -34,7 +34,7 @@ static int arg_t2(int argc, char **argv)
     return 0;
 }
 
-static QShell::SubCmdTable table[] = {
+static QShell::ArgsTable table[] = {
     { "t1", arg_t1, "test 1" },
     { "t2", arg_t2, "test 2" },
 };
@@ -45,7 +45,7 @@ static int cmd_test(int argc, char **argv)
         cli.args_help(table, sizeof(table));
         return 0;
     }
-    QCLI_SUBCMD_HANDLER(cli, argc, argv, table);
+    ARGS_TABLE_HANDLE(cli, argc, argv, table);
     return 0;
 }
 
