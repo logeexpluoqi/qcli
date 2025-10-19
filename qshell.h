@@ -104,19 +104,19 @@ private:
     GetChFunc getch;
 };
 
-class QShellSingleton {
+class QShellObj {
 public:
-    static QShell &instance()
+    static QShell &obj()
     {
-        static QShell instance(std::printf, nullptr);
-        return instance;
+        static QShell obj(std::printf, nullptr);
+        return obj;
     }
 
 private:
-    QShellSingleton() = default;
-    ~QShellSingleton() = default;
-    QShellSingleton(const QShellSingleton &) = delete;
-    QShellSingleton &operator=(const QShellSingleton &) = delete;
+    QShellObj() = default;
+    ~QShellObj() = default;
+    QShellObj(const QShellObj &) = delete;
+    QShellObj &operator=(const QShellObj &) = delete;
 };
 
 #endif

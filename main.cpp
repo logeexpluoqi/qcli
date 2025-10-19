@@ -8,7 +8,7 @@
 
 #include "qshell.h"
 
-static QShell &cli = QShellSingleton::instance();
+static QShell &cli = QShellObj::obj();
 
 static int arg_t1(int argc, char **argv)
 {
