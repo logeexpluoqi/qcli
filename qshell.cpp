@@ -124,21 +124,21 @@ int QShell::println(const char *fmt, ...)
     if(fmt == nullptr) {
         return -1;
     }
-    
+
     va_list args1, args2;
     va_start(args1, fmt);
     va_copy(args2, args1);
-    
+
     int len = vsnprintf(nullptr, 0, fmt, args1);
     va_end(args1);
-    
+
     if(len < 0) {
         va_end(args2);
         return -1;
     }
-    
+
     std::vector<char> buf(len + 1);
-    
+
     int sz = vsnprintf(buf.data(), len + 1, fmt, args2);
     va_end(args2);
 
@@ -146,7 +146,7 @@ int QShell::println(const char *fmt, ...)
         cli.print(" #! QShell::echo: vsnprintf failed\r\n");
         return -1;
     }
-    
+
     if(sz != len) {
         cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
@@ -161,21 +161,21 @@ int QShell::print(const char *fmt, ...)
     if(fmt == nullptr) {
         return -1;
     }
-    
+
     va_list args1, args2;
     va_start(args1, fmt);
     va_copy(args2, args1);
-    
+
     int len = vsnprintf(nullptr, 0, fmt, args1);
     va_end(args1);
-    
+
     if(len < 0) {
         va_end(args2);
         return -1;
     }
-    
+
     std::vector<char> buf(len + 1);
-    
+
     int sz = vsnprintf(buf.data(), len + 1, fmt, args2);
     va_end(args2);
 
@@ -183,7 +183,7 @@ int QShell::print(const char *fmt, ...)
         cli.print(" #! QShell::echo: vsnprintf failed\r\n");
         return -1;
     }
-    
+
     if(sz != len) {
         cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
@@ -259,7 +259,7 @@ void QShell::exec()
             break;
         }
 
-#ifdef _WIN32
+    #ifdef _WIN32
         if(c == 0xe0) {
             qcli_exec(&cli, c);
             int next_c = 0;
@@ -281,7 +281,7 @@ void QShell::exec()
         } else {
             qcli_exec(&cli, c);
         }
-#else
+    #else
         if(c == 27) {
             qcli_exec(&cli, c);
             int next_c1 = keyboard_getch();
@@ -298,7 +298,7 @@ void QShell::exec()
         } else {
             qcli_exec(&cli, c);
         }
-#endif
+    #endif
         c = (c == 127) ? 8 : c;
     }
     set_echo(true);
