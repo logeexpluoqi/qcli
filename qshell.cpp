@@ -272,7 +272,7 @@ void QShell::exec()
                 if(next_c == 3) {
                     cli.print("\33[2K");
                     cli.print("\033[H\033[J");
-                    cli.print(" \r\n#! QCLI Exit !\r\n");
+                    cli.print("\r\n -Q$hell Exit-\r\n");
                     break;
                 }
                 qcli_exec(&cli, next_c);
