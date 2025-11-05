@@ -45,7 +45,7 @@ static int cmd_test(int argc, char **argv)
         cli.args_help(table, sizeof(table));
         return 0;
     }
-    ARGS_TABLE_HANDLE(cli, argc, argv, table);
+    QSHELL_TABLE_EXEC(cli, argc, argv, table);
     return 0;
 }
 
@@ -53,9 +53,10 @@ int main()
 {
     cli.cmd_add("test", cmd_test, "test command");
     cli.title();
-    cli.start();
-    while(1) {
-        sleep(1);
-    }
+    // cli.start();
+    cli.exec();
+    // while(1) {
+        // sleep(1);
+    // }
     return 0;
 }

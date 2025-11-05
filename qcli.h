@@ -88,9 +88,9 @@ typedef struct {
     const char *name;
     QCliCallback cb;
     const char *usage;
-} QCliArgsTable;
+} QCliCmdTable;
 
-int qcli_subcmd_hdl(int argc, char **argv, const QCliArgsTable *table, size_t table_size);
+int qcli_table_exec(int argc, char **argv, const QCliCmdTable *table, size_t table_size);
 
 int qcli_init(QCliObj *cli, QCliPrint print);
 
