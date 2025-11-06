@@ -37,7 +37,7 @@
 class QShell {
 public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
-    using ArgsTable = QCliCmdTable;
+    using ArgsTable = QCliArgsTable;
     typedef int (*GetChFunc)(void);
     using Hook = std::function<void()>;
     QShell(QCliPrint print, GetChFunc getch);
@@ -65,7 +65,7 @@ public:
     int exit();
 
     // Function to display help for command arguments
-    // typedef QCliCmdTable QCliCmdTable;
+    // typedef QCliArgsTable QCliArgsTable;
     int args_help(ArgsTable *table, size_t sz);
 
     // Function to handle command arguments

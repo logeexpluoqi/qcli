@@ -333,7 +333,7 @@ int QShell::args_help(ArgsTable *table, size_t sz)
 
 int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size)
 {
-    return qcli_table_exec(argc, argv, table, table_size);
+    return qcli_args(argc, argv, table, table_size);
 }
 
 void QShell::title(void)
