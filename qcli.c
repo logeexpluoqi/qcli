@@ -520,7 +520,7 @@ int qcli_init(QCliObj *cli, QCliPrint print)
     }
     cli->cmds.next = cli->cmds.prev = &cli->cmds;
     cli->print = print;
-    cli->is_echotr = 0;
+    cli->is_echo = 0;
     cli->is_disp = 1;
     cli->argc = 0;
     cli->args_size = 0;
@@ -713,17 +713,17 @@ int qcli_exec(QCliObj *cli, char c)
 
     case _KEY_ENTER:
         if(cli->args_size == 0) {
-            if(!cli->is_echotr && cli->is_disp) {
+            if(!cli->is_echo && cli->is_disp) {
                 cli->print("\r\n%s", _PERFIX);
             }
             return 0;
         }
 
-        if(!cli->is_echotr && cli->is_disp) {
+        if(!cli->is_echo && cli->is_disp) {
             cli->print("\r\n");
         }
 
-        if((_strcmp(cli->args, "hs") != 0) && !cli->is_echotr) {
+        if((_strcmp(cli->args, "hs") != 0) && !cli->is_echo) {
             if(cli->history_num > 0) {
                 uint8_t last_index = (cli->history_index - 1 + QCLI_HISTORY_MAX) % QCLI_HISTORY_MAX;
                 if(_strcmp(cli->history[last_index], cli->args) != 0) {
@@ -744,7 +744,7 @@ int qcli_exec(QCliObj *cli, char c)
         _cmd_callback(cli);
         _cli_reset_buffer(cli);
 
-        if(!cli->is_echotr && cli->is_disp) {
+        if(!cli->is_echo && cli->is_disp) {
             cli->print("\r\n%s", _PERFIX);
         }
         return 0;
