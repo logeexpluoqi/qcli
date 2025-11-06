@@ -31,7 +31,7 @@
         if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
             return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
         } else {                                                                        \
-            return cli.args_handle(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));   \
+            return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));   \
         }
 
 class QShell {
@@ -71,7 +71,7 @@ public:
     // Function to handle command arguments
     // argc: Number of this second arguments, skip the first argument(command name)
     // argv: Array of argument strings, skip the first argument(command name)
-    int args_handle(int argc, char **argv, const ArgsTable *table, size_t table_size);
+    int args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size);
 
     // Prints a string to the shell output
     int println(const char *fmt, ...);
