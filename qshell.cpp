@@ -81,7 +81,7 @@ QShell::~QShell()
 {
     for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
         QCliCmd *cmd = (QCliCmd *)(*it);
-        qcli_remove(&cli, cmd);
+        qcli_del(&cli, cmd);
         delete cmd;
     }
     cmds_addr.clear();
@@ -215,7 +215,7 @@ int QShell::cmd_del(const char *name)
     }
 
     QCliCmd *cmd = qcli_find(&cli, name);
-    if(qcli_remove(&cli, cmd) == 0) {
+    if(qcli_del(&cli, cmd) == 0) {
         for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
             if(*it == (uintptr_t)cmd) {
                 cmds_addr.erase(it);
@@ -228,12 +228,12 @@ int QShell::cmd_del(const char *name)
     return 0;
 }
 
-int QShell::exec_s(std::string str)
+int QShell::echo(std::string str)
 {
     if(str.empty()) {
         return -1;
     }
-    qcli_exec_str(&cli, (char *)str.c_str());
+    qcli_echo(&cli, (char *)str.c_str());
     return 0;
 }
 
@@ -272,7 +272,7 @@ void QShell::exec()
                 if(next_c == 3) {
                     cli.print("\33[2K");
                     cli.print("\033[H\033[J");
-                    cli.print("\r\n -Q$hell Exit-\r\n");
+                    cli.print(" \r\n#! QCLI Exit !\r\n");
                     break;
                 }
                 qcli_exec(&cli, next_c);
@@ -308,7 +308,7 @@ void QShell::exec()
     }
 }
 
-int QShell::exec_c(char c)
+int QShell::execc(char c)
 {
     qcli_exec(&cli, c);
     return 0;

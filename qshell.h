@@ -78,11 +78,11 @@ public:
 
     int print(const char *fmt, ...);
 
-    int exec_s(std::string str);
+    int echo(std::string str);
 
     void exec();
 
-    int exec_c(char c);
+    int execc(char c);
 
     void title();
 private:
