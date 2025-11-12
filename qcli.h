@@ -6,8 +6,8 @@
  * @ Description:
  */
 
-#ifndef _QCLI_H
-#define _QCLI_H
+#ifndef _QCLI_H_
+#define _QCLI_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -15,6 +15,10 @@ extern "C" {
 
 #include <stdint.h>
 #include <stddef.h>
+
+#ifdef QCLI_USING_STDSTRING
+#include <string>
+#endif
 
 typedef struct _list{
     struct _list *prev;

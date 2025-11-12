@@ -60,6 +60,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
+#ifndef QCLI_USING_STDSTRING
 static inline void *_memcpy(void *dst, const void *src, size_t sz)
 {
     if(!dst || !src) {
@@ -158,6 +159,13 @@ static int _strncmp(const char *s1, const char *s2, size_t n)
 
     return (*(uint8_t *)s1 - *(uint8_t *)s2);
 }
+#else
+#define _memcpy(dst, src, sz) memcpy(dst, src, sz)
+#define _memset(dest, c, n) memset(dest, c, n)
+#define _strlen(s) strlen(s)
+#define _strcmp(s1, s2) strcmp(s1, s2)
+#define _strncmp(s1, s2, n) strncmp(s1, s2, n)
+#endif
 
 static char *_strinsert(char *s, size_t offset, const char *c, size_t size)
 {
