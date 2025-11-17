@@ -300,6 +300,7 @@ void QShell::exec()
         }
     #endif
         c = (c == 127) ? 8 : c;
+        std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
     set_echo(true);
 
