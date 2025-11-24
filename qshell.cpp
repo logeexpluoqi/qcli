@@ -102,11 +102,7 @@ int QShell::start()
     }
 
     thr = std::thread(&QShell::exec, this);
-    if(thr.joinable()) {
-        thr.detach();
-    } else {
-        return -1;
-    }
+    
     return 0;
 }
 
