@@ -20,7 +20,7 @@
 #include <cstring>
 #include <functional>
 
-#define QCLI_USING_STDSTRING
+#define QCLI_USING_STD_LIB
 #include "qcli.h"
 
 #define ISARG(str1, str2) ((str1) != nullptr && (str2) != nullptr && strcmp((str1), (str2)) == 0)
