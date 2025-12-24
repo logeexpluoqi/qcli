@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2025-12-23 11:17:8
+ * Last Modified: 2025-12-24 16:20:57
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -195,10 +195,18 @@ int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, cons
 /**
  * @brief Delete a command from the CLI.
  * @param cli Pointer to CLI object.
+ * @param name Command name.
+ * @return Error code.
+ */
+int qcli_del(QCliObj *cli, const char *name);
+
+/**
+ * @brief Insert a command at the beginning of the command list.
+ * @param cli Pointer to CLI object.
  * @param cmd Pointer to command structure.
  * @return Error code.
  */
-int qcli_del(QCliObj *cli, QCliCmd *cmd);
+int qcli_insert(QCliObj *cli, QCliCmd *cmd);
 
 /**
  * @brief Find a command by name.

@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2025-12-23 11:17:8
+ * Last Modified: 2025-12-24 16:19:21
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -596,18 +596,31 @@ int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, cons
     }
 }
 
-int qcli_del(QCliObj *cli, QCliCmd *cmd)
+int qcli_del(QCliObj *cli, const char *name)
 {
-    if(!cli) {
+    QCliCmd *_cmd = qcli_find(cli, name);
+    if(!_cmd) {
+        return -1;
+    }
+    _list_remove(&_cmd->node);
+    _cmd->cli = NULL;
+    return 0;
+}
+
+int qcli_insert(QCliObj *cli, QCliCmd *cmd)
+{
+    if(!cli || !cmd) {
         return -1;
     }
     if(_cmd_isexist(cli, cmd) == 0) {
-        _list_remove(&cmd->node);
+        _list_insert(&cli->cmds, &cmd->node);
+        cmd->cli = cli;
         return 0;
     } else {
         return -1;
     }
 }
+
 
 #define QCLI_HS_RECALL_DIR_PREV (-1)
 #define QCLI_HS_RECALL_DIR_NEXT (1)
