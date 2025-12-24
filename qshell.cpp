@@ -81,7 +81,6 @@ QShell::~QShell()
 {
     for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
         QCliCmd *cmd = (QCliCmd *)(*it);
-        qcli_del(&cli, cmd);
         delete cmd;
     }
     cmds_addr.clear();
@@ -211,7 +210,7 @@ int QShell::cmd_del(const char *name)
     }
 
     QCliCmd *cmd = qcli_find(&cli, name);
-    if(qcli_del(&cli, cmd) == 0) {
+    if(qcli_del(&cli, name) == 0) {
         for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
             if(*it == (uintptr_t)cmd) {
                 cmds_addr.erase(it);
