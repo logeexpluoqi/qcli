@@ -376,7 +376,7 @@ static int _help_cb(int argc, char **argv)
     {
         QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
 
-        cli->print(" -%-*s       ", l, cmd->name);
+        cli->print(" >%-*s       ", l, cmd->name);
 
         const char *usage = cmd->usage;
         size_t remain_len = _strlen(usage);

@@ -322,7 +322,7 @@ int QShell::args_help(ArgsTable *table, size_t sz)
     }
 
     for(size_t i = 0; i < n; i++) {
-        cli.print(" -%-*s  %s\r\n", l, table[i].name, table[i].usage);
+        cli.print(" :%-*s  %s\r\n", l, table[i].name, table[i].usage);
     }
     return 0;
 }
