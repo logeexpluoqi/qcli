@@ -29,11 +29,11 @@
 
 #define ISARGC(n) (argc == n)
 
-#define QSHELL_TABLE_EXEC(cli, argc, argv, sub_cmd_table)                                         \
+#define QSHELL_TABLE_EXEC(cli, argc, argv, sub_cmd_table)                               \
         if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
             return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
         } else {                                                                        \
-            return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));   \
+            return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));     \
         }
 
 class QShell {
@@ -62,6 +62,9 @@ public:
 
     // Deletes a command from the shell by its name
     int cmd_del(const char *name);
+
+    // Adds a subcommand to a parent command
+    int subcmd_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage);
 
     // Stops the shell thread
     int exit();

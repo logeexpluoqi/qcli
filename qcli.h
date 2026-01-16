@@ -118,6 +118,9 @@ struct QCliCmd {
     QCliCallback cb;     /**< Callback function. */
     const char *usage;   /**< Usage description. */
     QCliList node;       /**< Linked list node. */
+    QCliList subcmds;    /**< Linked list of subcommands. */
+    struct QCliCmd *parent; /**< Pointer to parent command. */
+    uint8_t has_subcmds; /**< Flag indicating if this command has subcommands. */
 };
 
 /**
@@ -215,6 +218,25 @@ int qcli_insert(QCliObj *cli, QCliCmd *cmd);
  * @return Pointer to command or NULL.
  */
 QCliCmd *qcli_find(QCliObj *cli, const char *name);
+
+/**
+ * @brief Add a subcommand to a parent command.
+ * @param parent Parent command structure.
+ * @param cmd Pointer to subcommand structure.
+ * @param name Subcommand name.
+ * @param cb Callback function.
+ * @param usage Usage string.
+ * @return Error code.
+ */
+int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
+
+/**
+ * @brief Find a subcommand by name in a parent command.
+ * @param parent Parent command.
+ * @param name Subcommand name.
+ * @return Pointer to subcommand or NULL.
+ */
+QCliCmd *qcli_subcmd_find(QCliCmd *parent, const char *name);
 
 /**
  * @brief Execute a character input for the CLI.
