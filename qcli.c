@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2025-12-24 16:19:21
+ * Last Modified: 2026-01-28 16:39:36
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -182,8 +182,15 @@ static char *_strinsert(char *s, size_t offset, const char *c, size_t size)
         return NULL;
     }
 
-    for(size_t i = len; i >= offset; i--) {
-        s[i + size] = s[i];
+    /* prevent buffer overflow: ensure new length fits in command buffer */
+#ifdef QCLI_CMD_STR_MAX
+    if(len + size >= QCLI_CMD_STR_MAX) {
+        return NULL;
+    }
+#endif
+
+    for (size_t i = len + 1; i > offset; i--) {
+        s[i - 1 + size] = s[i - 1];
     }
 
     for(size_t i = 0; i < size; i++) {
@@ -258,7 +265,7 @@ static int _cmd_isexist(QCliObj *cli, QCliCmd *cmd)
 
 static inline void _cli_reset_buffer(QCliObj *cli)
 {
-    _memset(cli->args, 0, cli->args_size);
+    _memset(cli->args, 0, sizeof(cli->args));
     _memset(&cli->argv, 0, cli->argc * sizeof(char *));
     cli->args_size = 0;
     cli->args_index = 0;
@@ -761,10 +768,15 @@ static void _history_navigation(QCliObj *cli, int direction)
         return;
     }
 
-    _memset(cli->args, 0, cli->args_size);
+    _memset(cli->args, 0, sizeof(cli->args));
     cli->args_size = _strlen(cli->history[cli->history_recall_index]);
+    if (cli->args_size > QCLI_CMD_STR_MAX) {
+        cli->args_size = QCLI_CMD_STR_MAX;
+    }
     cli->args_index = cli->args_size;
     _memcpy(cli->args, cli->history[cli->history_recall_index], cli->args_size);
+    /* Ensure null-termination after copying history */
+    cli->args[cli->args_size] = '\0';
     if(cli->is_disp) {
         cli->print("%s%s%s", _CLEAR_LINE, _PERFIX, cli->args);
     }
@@ -803,8 +815,13 @@ static void _special_key(QCliObj *cli, char c)
 
 static void _add_to_history(QCliObj *cli, const char *cmd, uint16_t size)
 {
-    _memset(cli->history[cli->history_index], 0, QCLI_CMD_STR_MAX);
+    /* ensure we don't overflow history entries and keep them null-terminated */
+    if (size > QCLI_CMD_STR_MAX) {
+        size = QCLI_CMD_STR_MAX;
+    }
+    _memset(cli->history[cli->history_index], 0, QCLI_CMD_STR_MAX + 1);
     _memcpy(cli->history[cli->history_index], cmd, size);
+    cli->history[cli->history_index][size] = '\0';
     cli->history_index = (cli->history_index + 1) % QCLI_HISTORY_MAX;
     if(cli->history_num < QCLI_HISTORY_MAX) {
         cli->history_num++;
@@ -928,6 +945,10 @@ static int _handle_default_char(QCliObj *cli, char c)
     }
     if(cli->is_disp) {
         cli->print("%c", c);
+    }
+    /* Ensure null-termination after append/insert to keep string APIs safe */
+    if (cli->args_size < QCLI_CMD_STR_MAX + 1) {
+        cli->args[cli->args_size] = '\0';
     }
     return 0;
 }
