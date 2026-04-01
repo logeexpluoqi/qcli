@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-01-28 16:39:36
+ * Last Modified: 2026-04-01 22:57:28
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -61,7 +61,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define QCLI_ITERATOR(node, cmds)      for (node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list)   for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
-#if __QCLI_USING_STDSTR
+#if __QCLI_USE_STDLIBCC
 #include <string.h>
 #define _memcpy memcpy
 #define _memset memset
@@ -721,7 +721,7 @@ static int cmd_cb_(QCliObj *cli)
         _cmd = QCLI_ENTRY(_node, QCliCmd, node);
         if (_strcmp(cli->argv[0], _cmd->name) == 0) {
             if (_cmd->has_subcmds && cli->argc > 1) {
-                QCliCmd *subcmd = qcli_subcmd_find(_cmd, cli->argv[1]);
+                QCliCmd *subcmd = qcli_sub_find(_cmd, cli->argv[1]);
                 if (subcmd) {
                     cmd_exec_(cli, subcmd, &result);
                 } else {
@@ -1127,7 +1127,7 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name)
     return cmd_find_in_list_(&cli->cmds, name);
 }
 
-int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage)
+int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage)
 {
     if(!parent || !cmd || !cb) {
         return -1;
@@ -1149,7 +1149,7 @@ int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallbac
     return 0;
 }
 
-QCliCmd *qcli_subcmd_find(QCliCmd *parent, const char *name)
+QCliCmd *qcli_sub_find(QCliCmd *parent, const char *name)
 {
     if(!parent || !name) {
         return NULL;

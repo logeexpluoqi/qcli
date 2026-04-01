@@ -34,7 +34,7 @@ typedef struct {
 
 **新增函数 #1:**
 ```c
-int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, 
+int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, 
                     const char *name, QCliCallback cb, 
                     const char *usage);
 ```
@@ -45,7 +45,7 @@ int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd,
 
 **新增函数 #2:**
 ```c
-QCliCmd *qcli_subcmd_find(QCliCmd *parent, const char *name);
+QCliCmd *qcli_sub_find(QCliCmd *parent, const char *name);
 ```
 - 功能：在父命令中查找子命令
 - 参数：父命令、子命令名称
@@ -56,7 +56,7 @@ QCliCmd *qcli_subcmd_find(QCliCmd *parent, const char *name);
 
 **新增函数 #3:**
 ```cpp
-int QShell::subcmd_add(const char *parent_name, 
+int QShell::cmd_sub_add(const char *parent_name, 
                        const char *subcmd_name,
                        QShellCmdHandler handler, 
                        const char *usage);
@@ -286,7 +286,7 @@ qcli_add(&cli, &config, "config", NULL, "config cmd");
 
 // 2. 添加子命令（新增）
 QCliCmd get_cmd;
-qcli_subcmd_add(&config, &get_cmd, "get", get_handler, "get value");
+qcli_sub_add(&config, &get_cmd, "get", get_handler, "get value");
 ```
 
 ## 已知问题 & 限制

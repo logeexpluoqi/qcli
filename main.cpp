@@ -133,13 +133,13 @@ int main()
     }, "configuration management");
     
     // ===== Level 2: config subcommands (get, set, list) =====
-    cli.subcmd_add("config", "get", config_get, "get configuration value");
-    cli.subcmd_add("config", "set", config_set, "set configuration value");
-    cli.subcmd_add("config", "list", config_list, "list all configuration keys");
+    cli.cmd_sub_add("config", "get", config_get, "get configuration value");
+    cli.cmd_sub_add("config", "set", config_set, "set configuration value");
+    cli.cmd_sub_add("config", "list", config_list, "list all configuration keys");
     
     // ===== Level 2-3: config debug subcommand with handlers for on/off =====
     // Note: For three-level commands, we use a wrapper that handles the third level
-    cli.subcmd_add("config", "debug", [](int argc, char **argv) -> int {
+    cli.cmd_sub_add("config", "debug", [](int argc, char **argv) -> int {
         if(argc < 2) {
             cli.println("Debug mode management: on, off");
             cli.println("Usage: config debug on|off");
@@ -166,9 +166,9 @@ int main()
     }, "network management");
     
     // ===== Level 2: network subcommands =====
-    cli.subcmd_add("net", "connect", net_connect, "connect to remote host");
-    cli.subcmd_add("net", "disconnect", net_disconnect, "disconnect from remote host");
-    cli.subcmd_add("net", "status", net_status, "show network status");
+    cli.cmd_sub_add("net", "connect", net_connect, "connect to remote host");
+    cli.cmd_sub_add("net", "disconnect", net_disconnect, "disconnect from remote host");
+    cli.cmd_sub_add("net", "status", net_status, "show network status");
     
     cli.title();
     cli.exec();

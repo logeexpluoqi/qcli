@@ -223,7 +223,7 @@ int QShell::cmd_del(const char *name)
     return 0;
 }
 
-int QShell::subcmd_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage)
+int QShell::cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage)
 {
     if(parent_name == nullptr || subcmd_name == nullptr || handler == nullptr || usage == nullptr) {
         return -1;
@@ -235,7 +235,7 @@ int QShell::subcmd_add(const char *parent_name, const char *subcmd_name, QShellC
     }
     
     QCliCmd *subcmd = new QCliCmd;
-    int ret = qcli_subcmd_add(parent, subcmd, subcmd_name, handler, usage);
+    int ret = qcli_sub_add(parent, subcmd, subcmd_name, handler, usage);
     if(ret != 0) {
         delete subcmd;
         return ret;

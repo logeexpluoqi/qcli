@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2025-12-24 16:20:57
+ * Last Modified: 2026-04-01 22:57:28
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -29,14 +29,14 @@ extern "C" {
 #include <stddef.h>
 
 /**
- * @def QCLI_USING_STD_LIB
+ * @def QCLI_USE_STDLIBC
  * @brief Define to use standard C library functions for string operations.
  * If not defined, custom implementations are used.
  */
-#ifndef QCLI_USING_STD_LIB
-#define __QCLI_USING_STDSTR 0
+#ifndef QCLI_USE_STDLIBC
+#define __QCLI_USE_STDLIBCC 0
 #else
-#define __QCLI_USING_STDSTR 1
+#define __QCLI_USE_STDLIBCC 1
 #endif
 
 /**
@@ -255,7 +255,7 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name);
  * @param usage Usage string.
  * @return Error code.
  */
-int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
+int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
 
 /**
  * @brief Find a subcommand by name in a parent command.
@@ -263,7 +263,7 @@ int qcli_subcmd_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallbac
  * @param name Subcommand name.
  * @return Pointer to subcommand or NULL.
  */
-QCliCmd *qcli_subcmd_find(QCliCmd *parent, const char *name);
+QCliCmd *qcli_sub_find(QCliCmd *parent, const char *name);
 
 /**
  * @brief Execute a character input for the CLI.

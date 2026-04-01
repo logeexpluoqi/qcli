@@ -20,7 +20,7 @@
 #include <cstring>
 #include <functional>
 
-#define QCLI_USING_STD_LIB
+#define QCLI_USE_STDLIBC
 #include "qcli.h"
 
 #define ISARG(str1, str2) ((str1) != nullptr && (str2) != nullptr && strcmp((str1), (str2)) == 0)
@@ -64,7 +64,7 @@ public:
     int cmd_del(const char *name);
 
     // Adds a subcommand to a parent command
-    int subcmd_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage);
+    int cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage);
 
     // Stops the shell thread
     int exit();
