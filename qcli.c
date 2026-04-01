@@ -492,7 +492,7 @@ static int disp_cb_(int argc, char **argv)
 #define QCLI_SUBCMD_INDENT 2  // Subcommand Usage indent relative to main command
 
 // Helper function to print usage text with proper line wrapping and alignment
-static void print_usage_(QCliObj *cli, const char *usage, int indent_col)
+static inline void usage_print_(QCliObj *cli, const char *usage, int indent_col)
 {
     size_t remain_len = _strlen(usage);
     size_t offset = 0;
@@ -576,7 +576,7 @@ static int help_cb_(int argc, char **argv)
         int pad = (QCLI_USAGE_OFFSET > header_len) ? (QCLI_USAGE_OFFSET - header_len) : 1;
         
         cli->print(" %c%-*s%*s", marker, max_cmd, cmd->name, pad, "");
-        print_usage_(cli, cmd->usage, QCLI_USAGE_OFFSET);
+        usage_print_(cli, cmd->usage, QCLI_USAGE_OFFSET);
         
         // Display subcommands if -a flag is provided and they exist
         if (show_sub && cmd->has_subcmds) {
@@ -590,7 +590,7 @@ static int help_cb_(int argc, char **argv)
                 int sub_pad = (sub_offset > sub_header) ? (sub_offset - sub_header) : 1;
                 
                 cli->print("   %-*s%*s", max_sub, subcmd->name, sub_pad, "");
-                print_usage_(cli, subcmd->usage, sub_offset);
+                usage_print_(cli, subcmd->usage, sub_offset);
             }
         }
     }
@@ -706,7 +706,7 @@ static inline void err_info_(QCliObj *cli, int result)
     }
 }
 
-static int cmd_callback_(QCliObj *cli)
+static int cmd_cb_(QCliObj *cli)
 {
     if (!cli) {
         return -1;
@@ -848,7 +848,7 @@ int qcli_insert(QCliObj *cli, QCliCmd *cmd)
 #define QCLI_HS_RECALL_DIR_PREV (-1)
 #define QCLI_HS_RECALL_DIR_NEXT (1)
 
-static void history_navigation_(QCliObj *cli, int direction)
+static void history_nav_(QCliObj *cli, int direction)
 {
     if (direction == QCLI_HS_RECALL_DIR_PREV) {
         if (cli->history_recall_times < cli->history.count) {
@@ -896,10 +896,10 @@ static void special_key_(QCliObj *cli, char c)
 {
     switch(c) {
     case _KEY_UP:
-        history_navigation_(cli, QCLI_HS_RECALL_DIR_PREV);
+        history_nav_(cli, QCLI_HS_RECALL_DIR_PREV);
         break;
     case _KEY_DOWN:
-        history_navigation_(cli, QCLI_HS_RECALL_DIR_NEXT);
+        history_nav_(cli, QCLI_HS_RECALL_DIR_NEXT);
         break;
     case _KEY_RIGHT:
         if(cli->args_index < cli->args_size) {
@@ -1012,7 +1012,7 @@ static int handle_enter_(QCliObj *cli)
         }
         return 0;
     }
-    cmd_callback_(cli);
+    cmd_cb_(cli);
     cli_reset_buffer_(cli);
 
     if (!cli->flags.is_echo && cli->flags.is_disp) {
