@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-01 22:57:28
+ * Last Modified: 2026-04-01 23:55:50
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -212,15 +212,20 @@ static void hash_remove_(QCliHashTable *table, const char *name)
     }
 }
 
-// Ring buffer functions for history management
-static void rb_init_(QCliRingBuffer *buf, size_t capacity)
+static inline void rb_reset_(QCliRingBuffer *buf)
 {
-    for (size_t i = 0; i < capacity; i++) {
+    for (size_t i = 0; i < buf->capacity; i++) {
         _memset(buf->entries[i], 0, QCLI_CMD_STR_MAX + 1);
     }
     buf->head = 0;
     buf->tail = 0;
     buf->count = 0;
+}
+
+// Ring buffer functions for history management
+static void rb_init_(QCliRingBuffer *buf, size_t capacity)
+{
+    rb_reset_(buf);
     buf->capacity = capacity;
 }
 
@@ -247,16 +252,6 @@ static const char *rb_get_(QCliRingBuffer *buf, size_t index)
     }
     size_t pos = (buf->tail + index) % buf->capacity;
     return buf->entries[pos];
-}
-
-static void rb_clear_(QCliRingBuffer *buf)
-{
-    for (size_t i = 0; i < buf->capacity; i++) {
-        _memset(buf->entries[i], 0, QCLI_CMD_STR_MAX + 1);
-    }
-    buf->head = 0;
-    buf->tail = 0;
-    buf->count = 0;
 }
 
 static char *strinsert_(char *s, size_t offset, const char *c, size_t size)
