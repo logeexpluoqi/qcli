@@ -54,7 +54,6 @@ int keyboard_getch()
 
     SetConsoleMode(hStdin, mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
 
-
     DWORD result = WaitForSingleObject(hStdin, 5);
     if(result == WAIT_OBJECT_0) {
         if(_kbhit()) {
@@ -100,7 +99,7 @@ int QShell::start()
     }
 
     thr = std::thread(&QShell::exec, this);
-    
+
     return 0;
 }
 
@@ -227,12 +226,12 @@ int QShell::cmd_sub_add(const char *parent_name, const char *subcmd_name, QShell
     if(parent_name == nullptr || subcmd_name == nullptr || handler == nullptr || usage == nullptr) {
         return -1;
     }
-    
+
     QCliCmd *parent = qcli_find(&cli, parent_name);
     if(parent == nullptr) {
         return -1;
     }
-    
+
     QCliCmd *subcmd = new QCliCmd;
     int ret = qcli_sub_add(parent, subcmd, subcmd_name, handler, usage);
     if(ret != 0) {
@@ -274,7 +273,7 @@ void QShell::exec()
             break;
         }
 
-    #ifdef _WIN32
+#ifdef _WIN32
         if(c == 0xe0) {
             qcli_exec(&cli, c);
             int next_c = 0;
@@ -296,7 +295,7 @@ void QShell::exec()
         } else {
             qcli_exec(&cli, c);
         }
-    #else
+#else
         if(c == 27) {
             qcli_exec(&cli, c);
             int next_c1 = keyboard_getch();
@@ -313,7 +312,7 @@ void QShell::exec()
         } else {
             qcli_exec(&cli, c);
         }
-    #endif
+#endif
         c = (c == 127) ? 8 : c;
         std::this_thread::sleep_for(std::chrono::milliseconds(5));
     }
@@ -347,17 +346,8 @@ int QShell::args_help(ArgsTable *table, size_t sz)
     return 0;
 }
 
-int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size)
-{
-    return qcli_args(argc, argv, table, table_size);
-}
+int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size) { return qcli_args(argc, argv, table, table_size); }
 
-void QShell::title(void)
-{
-    qcli_title(&cli);
-}
+void QShell::title(void) { qcli_title(&cli); }
 
-void QShell::exit_hook_set(Hook hook)
-{
-    on_exit = hook;
-}
+void QShell::exit_hook_set(Hook hook) { on_exit = hook; }

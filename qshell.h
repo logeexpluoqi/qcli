@@ -24,16 +24,16 @@
 
 #define ISARG(str1, str2) ((str1) != nullptr && (str2) != nullptr && strcmp((str1), (str2)) == 0)
 
-#define ISARGV(n, str)  (argv[n] != nullptr && strcmp(argv[n], #str) == 0)
+#define ISARGV(n, str) (argv[n] != nullptr && strcmp(argv[n], #str) == 0)
 
 #define ISARGC(n) (argc == n)
 
-#define QSHELL_TABLE_EXEC(cli, argc, argv, sub_cmd_table)                               \
-        if(ISARGV(1, ?) && ISARGC(2)) {                                                 \
-            return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                 \
-        } else {                                                                        \
-            return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));     \
-        }
+#define QSHELL_TABLE_EXEC(cli, argc, argv, sub_cmd_table)                                                                                                                                                                                      \
+        if(ISARGV(1, ?) && ISARGC(2)) {                                                                                                                                                                                                        \
+        return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));                                                                                                                                                                            \
+    } else {                                                                                                                                                                                                                                   \
+        return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table));                                                                                                                                                                \
+    }
 
 class QShell {
 public:
@@ -89,6 +89,7 @@ public:
     int execc(char c);
 
     void title();
+
 private:
     // Shell initialization flag
     bool inited = false;

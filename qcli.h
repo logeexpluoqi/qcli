@@ -44,7 +44,7 @@ extern "C" {
  * @brief Maximum number of history entries.
  */
 #ifndef QCLI_HISTORY_MAX
-#define QCLI_HISTORY_MAX    10
+#define QCLI_HISTORY_MAX 10
 #endif
 
 /**
@@ -52,7 +52,7 @@ extern "C" {
  * @brief Maximum length of a command string.
  */
 #ifndef QCLI_CMD_STR_MAX
-#define QCLI_CMD_STR_MAX    50
+#define QCLI_CMD_STR_MAX 50
 #endif
 
 /**
@@ -60,7 +60,7 @@ extern "C" {
  * @brief Maximum number of arguments in a command.
  */
 #ifndef QCLI_CMD_ARGC_MAX
-#define QCLI_CMD_ARGC_MAX   10
+#define QCLI_CMD_ARGC_MAX 10
 #endif
 
 /**
@@ -68,13 +68,13 @@ extern "C" {
  * @brief Enable or disable showing the title on initialization.
  */
 #ifndef QCLI_SHOW_TITLE
-#define QCLI_SHOW_TITLE     0
+#define QCLI_SHOW_TITLE 0
 #endif
 
 /**
  * @brief Doubly linked list structure for command management.
  */
-typedef struct _list{
+typedef struct _list {
     struct _list *prev; /**< Pointer to the previous node. */
     struct _list *next; /**< Pointer to the next node. */
 } QCliList;
@@ -113,77 +113,77 @@ typedef struct QCliCmd QCliCmd; /**< Forward declaration for command. */
  * @brief Structure representing a CLI command.
  */
 struct QCliCmd {
-    QCliObj *cli;        /**< Pointer to the associated CLI object. */
-    const char *name;    /**< Command name. */
-    QCliCallback cb;     /**< Callback function. */
-    const char *usage;   /**< Usage description. */
-    QCliList node;       /**< Linked list node. */
-    QCliList subcmds;    /**< Linked list of subcommands. */
+    QCliObj *cli;           /**< Pointer to the associated CLI object. */
+    const char *name;       /**< Command name. */
+    QCliCallback cb;        /**< Callback function. */
+    const char *usage;      /**< Usage description. */
+    QCliList node;          /**< Linked list node. */
+    QCliList subcmds;       /**< Linked list of subcommands. */
     struct QCliCmd *parent; /**< Pointer to parent command. */
     struct QCliCmd *next;   /**< Next command in hash table bucket. */
-    uint8_t has_subcmds; /**< Flag indicating if this command has subcommands. */
+    uint8_t has_subcmds;    /**< Flag indicating if this command has subcommands. */
 };
 
 /**
  * @brief Hash table structure for command lookup.
  */
 typedef struct {
-    QCliCmd **buckets;  /**< Hash table buckets. */
-    size_t size;        /**< Size of the hash table. */
-    size_t count;       /**< Number of commands in the hash table. */
+    QCliCmd **buckets; /**< Hash table buckets. */
+    size_t size;       /**< Size of the hash table. */
+    size_t count;      /**< Number of commands in the hash table. */
 } QCliHashTable;
 
 /**
  * @brief Ring buffer structure for command history.
  */
 typedef struct {
-    char entries[QCLI_HISTORY_MAX][QCLI_CMD_STR_MAX + 1];  /**< History entries. */
-    size_t head;                      /**< Head index of the ring buffer. */
-    size_t tail;                      /**< Tail index of the ring buffer. */
-    size_t count;                     /**< Number of entries in the ring buffer. */
-    size_t capacity;                  /**< Capacity of the ring buffer. */
+    char entries[QCLI_HISTORY_MAX][QCLI_CMD_STR_MAX + 1]; /**< History entries. */
+    size_t head;                                          /**< Head index of the ring buffer. */
+    size_t tail;                                          /**< Tail index of the ring buffer. */
+    size_t count;                                         /**< Number of entries in the ring buffer. */
+    size_t capacity;                                      /**< Capacity of the ring buffer. */
 } QCliRingBuffer;
 
 /**
  * @brief Structure representing the CLI object.
  */
 struct QCliObj {
-    char args[QCLI_CMD_STR_MAX + 1];                    /**< Input argument buffer. */
-    char *argv[QCLI_CMD_ARGC_MAX + 1];                  /**< Parsed argument pointers. */
-    QCliRingBuffer history;                             /**< Command history ring buffer. */
-    uint16_t args_size;                                 /**< Current size of args buffer. */
+    char args[QCLI_CMD_STR_MAX + 1];   /**< Input argument buffer. */
+    char *argv[QCLI_CMD_ARGC_MAX + 1]; /**< Parsed argument pointers. */
+    QCliRingBuffer history;            /**< Command history ring buffer. */
+    uint16_t args_size;                /**< Current size of args buffer. */
     union {
         struct {
-            uint8_t is_echo : 1;                        /**< Echo input flag. */
-            uint8_t is_disp : 1;                        /**< Display output flag. */
-            uint8_t reserved : 6;                       /**< Reserved bits. */
+            uint8_t is_echo : 1;  /**< Echo input flag. */
+            uint8_t is_disp : 1;  /**< Display output flag. */
+            uint8_t reserved : 6; /**< Reserved bits. */
         } flags;
-        uint8_t flags_value;                            /**< Combined flags value. */
-    };                                                  /**< Flags union. */
-    uint8_t args_index;                                 /**< Current cursor index in args. */
-    uint8_t history_index;                              /**< Current history index. */
-    uint8_t history_recall_index;                       /**< Recall index for history. */
-    uint8_t history_recall_times;                       /**< Number of recalls. */
-    uint8_t special_key;                                /**< State for special key handling. */
-    int argc;                                           /**< Number of parsed arguments. */
-    QCliPrint print;                                    /**< Print function. */
-    
-    QCliCmd _disp;      /**< Built-in display command. */
-    QCliCmd _history;   /**< Built-in history command. */
-    QCliCmd _help;      /**< Built-in help command. */
-    QCliCmd _clear;     /**< Built-in clear command. */
+        uint8_t flags_value; /**< Combined flags value. */
+    }; /**< Flags union. */
+    uint8_t args_index;           /**< Current cursor index in args. */
+    uint8_t history_index;        /**< Current history index. */
+    uint8_t history_recall_index; /**< Recall index for history. */
+    uint8_t history_recall_times; /**< Number of recalls. */
+    uint8_t special_key;          /**< State for special key handling. */
+    int argc;                     /**< Number of parsed arguments. */
+    QCliPrint print;              /**< Print function. */
 
-    QCliList cmds;      /**< List of registered commands. */
-    QCliHashTable cmd_table;  /**< Hash table for fast command lookup. */
+    QCliCmd _disp;    /**< Built-in display command. */
+    QCliCmd _history; /**< Built-in history command. */
+    QCliCmd _help;    /**< Built-in help command. */
+    QCliCmd _clear;   /**< Built-in clear command. */
+
+    QCliList cmds;           /**< List of registered commands. */
+    QCliHashTable cmd_table; /**< Hash table for fast command lookup. */
 };
 
 /**
  * @brief Structure for argument table.
  */
 typedef struct {
-    const char *name;    /**< Argument name. */
-    QCliCallback cb;     /**< Callback function. */
-    const char *usage;   /**< Usage description. */
+    const char *name;  /**< Argument name. */
+    QCliCallback cb;   /**< Callback function. */
+    const char *usage; /**< Usage description. */
 } QCliArgsTable;
 
 /**
