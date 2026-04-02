@@ -9,6 +9,7 @@ AlignOperands: true
 AlignTrailingComments: true
 AlignConsecutiveMacros: true
 AlwaysBreakTemplateDeclarations: Yes
+AllowShortFunctionsOnASingleLine: Inline
 BraceWrapping: 
   AfterCaseLabel: false
   AfterClass: false
