@@ -14,7 +14,6 @@
 #include <thread>
 #include <cstdint>
 #include <cstdio>
-#include <atomic>
 #include <string>
 #include <vector>
 #include <cstring>
