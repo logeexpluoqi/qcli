@@ -346,8 +346,17 @@ int QShell::args_help(ArgsTable *table, size_t sz)
     return 0;
 }
 
-int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size) { return qcli_args(argc, argv, table, table_size); }
+int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size)
+{
+    return qcli_args(argc, argv, table, table_size);
+}
 
-void QShell::title(void) { qcli_title(&cli); }
+void QShell::title(void)
+{
+    qcli_title(&cli);
+}
 
-void QShell::exit_hook_set(Hook hook) { on_exit = hook; }
+void QShell::exit_hook_set(Hook hook)
+{
+    on_exit = hook;
+}

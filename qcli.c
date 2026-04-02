@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-01 23:55:50
+ * Last Modified: 2026-04-02 22:52:47
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -57,9 +57,10 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _QCLI_CSAP_BBAR "\033[5SPq"    // cursor shape blinking bar
 #define _QCLI_CSAP_SBAR "\033[6SPq"    // cursor shape steady bar
 
-#define QCLI_ENTRY(ptr, type, member)         ((type *)((char *)(ptr) - (uintptr_t) & ((type *)0)->member))
-#define QCLI_ITERATOR(node, cmds)             for(node = (cmds)->next; node != (cmds); node = node->next)
-#define QCLI_ITERATOR_SAFE(node, cache, list) for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
+#define QCLI_ENTRY(ptr, type, member) ((type *)((char *)(ptr) - (uintptr_t) & ((type *)0)->member))
+#define QCLI_ITERATOR(node, cmds)     for(node = (cmds)->next; node != (cmds); node = node->next)
+#define QCLI_ITERATOR_SAFE(node, cache, list) \
+    for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
 #if __QCLI_USE_STDLIBCC
 #include <string.h>
@@ -664,7 +665,11 @@ static int parser_(QCliObj *cli, char *str, uint16_t len)
     return 0;
 }
 
-static inline int is_builtin_cmd_(const char *name) { return (_strcmp(name, "?") == 0) || (_strcmp(name, "hs") == 0) || (_strcmp(name, "disp") == 0) || (_strcmp(name, "clear") == 0); }
+static inline int is_builtin_cmd_(const char *name)
+{
+    return (_strcmp(name, "?") == 0) || (_strcmp(name, "hs") == 0) || (_strcmp(name, "disp") == 0) ||
+           (_strcmp(name, "clear") == 0);
+}
 
 static inline void cmd_exec_(QCliObj *cli, QCliCmd *cmd, int *result)
 {
@@ -840,7 +845,8 @@ static void history_nav_(QCliObj *cli, int direction)
     if(direction == QCLI_HS_RECALL_DIR_PREV) {
         if(cli->history_recall_times < cli->history.count) {
             // Move to previous history entry
-            cli->history_recall_index = (cli->history_recall_index == 0) ? cli->history.count - 1 : cli->history_recall_index - 1;
+            cli->history_recall_index =
+                    (cli->history_recall_index == 0) ? cli->history.count - 1 : cli->history_recall_index - 1;
             cli->history_recall_times++;
         } else {
             return;

@@ -1,61 +1,87 @@
 # Generated from CLion C/C++ Code Style settings
+# 代码风格配置文件 - 分类和注释版
 ---
 Language: Cpp
-BasedOnStyle: LLVM
-AccessModifierOffset: -4
-AlignConsecutiveAssignments: false
-AlignConsecutiveDeclarations: false
-AlignOperands: true
-AlignTrailingComments: true
-AlignConsecutiveMacros: true
-AlwaysBreakTemplateDeclarations: Yes
-AllowShortFunctionsOnASingleLine: Inline
+
+# 基础配置
+BasedOnStyle: LLVM                 # 基于 LLVM 风格
+TabWidth: 4                        # Tab 宽度为 4 个空格
+ColumnLimit: 120                   # 每行最大字符数为 120
+InsertNewlineAtEOF: true           # 在文件末尾插入换行
+
+# 访问修饰符配置
+AccessModifierOffset: -4           # 访问修饰符缩进偏移量
+
+# 对齐相关配置
+AlignAfterOpenBracket: Align       # 开括号后的对齐方式：对齐
+AlignConsecutiveAssignments: false # 连续赋值语句对齐：关闭
+AlignConsecutiveDeclarations: false # 连续声明对齐：关闭
+AlignConsecutiveMacros: true       # 连续宏定义对齐：开启
+AlignEscapedNewlinesLeft: true     # 转义换行符左对齐：开启
+AlignOperands: true                # 操作数对齐：开启
+AlignTrailingComments: true        # 尾随注释对齐：开启
+
+# 缩进相关配置
+IndentWidth: 4                     # 缩进宽度为 4 个空格
+ContinuationIndentWidth: 8         # 续行缩进宽度为 8 个空格
+IndentGotoLabels: false            # goto 标签缩进：关闭
+NamespaceIndentation: All          # 命名空间缩进：全部缩进
+
+# 换行相关配置
+AlwaysBreakTemplateDeclarations: Yes # 模板声明总是换行：是
+BinPackParameters: false           # 参数打包：关闭
+BreakBeforeBraces: Custom          # 大括号前换行：自定义
+BreakConstructorInitializers: AfterColon # 构造函数初始化列表换行位置：冒号后
+BreakConstructorInitializersBeforeComma: false # 构造函数初始化列表在逗号前换行：关闭
+ConstructorInitializerAllOnOneLineOrOnePerLine: false # 构造函数初始化列表单行或每行一个：关闭
+
+# 空格相关配置
+SpaceAfterTemplateKeyword: false   # 模板关键字后空格：关闭
+SpaceBeforeParens: Never           # 括号前空格：从不
+SpaceBeforeRangeBasedForLoopColon: false # 基于范围的 for 循环冒号前空格：关闭
+SpaceInEmptyParentheses: false     # 空括号内空格：关闭
+SpacesInAngles: false              # 尖括号内空格：关闭
+SpacesInConditionalStatement: false # 条件语句内空格：关闭
+SpacesInCStyleCastParentheses: false # C 风格转换括号内空格：关闭
+SpacesInParentheses: false         # 括号内空格：关闭
+
+# 大括号包装配置
 BraceWrapping: 
-  AfterCaseLabel: false
-  AfterClass: false
-  AfterControlStatement: false
-  AfterEnum: false
-  AfterFunction: true
-  AfterNamespace: false
-  AfterStruct: false
-  AfterUnion: false
-  AfterExternBlock: false
-  BeforeCatch: false
-  BeforeElse: false
-  BeforeLambdaBody: false
-  BeforeWhile: false
-  SplitEmptyFunction: true
-  SplitEmptyRecord: true
-  SplitEmptyNamespace: true
-BreakBeforeBraces: Custom
-BreakConstructorInitializers: AfterColon
-BreakConstructorInitializersBeforeComma: false
-ColumnLimit: 120
-ConstructorInitializerAllOnOneLineOrOnePerLine: false
-ContinuationIndentWidth: 8
-Cpp11BracedListStyle: false
+  AfterCaseLabel: false            #  case 标签后大括号：关闭
+  AfterClass: false                # 类后大括号：关闭
+  AfterControlStatement: false     # 控制语句后大括号：关闭
+  AfterEnum: false                 # 枚举后大括号：关闭
+  AfterFunction: true              # 函数后大括号：开启
+  AfterNamespace: false            # 命名空间后大括号：关闭
+  AfterStruct: false               # 结构体后大括号：关闭
+  AfterUnion: false                # 联合后大括号：关闭
+  AfterExternBlock: false          #  extern 块后大括号：关闭
+  BeforeCatch: false               # catch 前大括号：关闭
+  BeforeElse: false                # else 前大括号：关闭
+  BeforeLambdaBody: false          # Lambda 体前大括号：关闭
+  BeforeWhile: false               # while 前大括号：关闭
+  SplitEmptyFunction: true         # 分割空函数：开启
+  SplitEmptyRecord: true           # 分割空记录：开启
+  SplitEmptyNamespace: true        # 分割空命名空间：开启
+
+# 简短代码配置
+AllowShortEnumsOnASingleLine: false # 允许短枚举在单行：关闭
+AllowAllParametersOfDeclarationOnNextLine: false # 允许所有声明参数在下行：关闭
+AllowShortFunctionsOnASingleLine: Inline # 允许短函数在单行：仅内联函数
+
+# 其他配置
+Cpp11BracedListStyle: false        # C++11 大括号列表风格：关闭
+MacroBlockBegin: ''                # 宏块开始标记
+MacroBlockEnd: ''                  # 宏块结束标记
+SortIncludes: false                # 排序包含文件：关闭
+
+# 包含文件配置
 IncludeCategories: 
-  - Regex: '^<.*'
-    Priority: 1
-  - Regex: '^".*'
-    Priority: 2
-  - Regex: '.*'
-    Priority: 3
-IncludeIsMainRegex: '([-_](test|unittest))?$'
-IndentGotoLabels: false
-IndentWidth: 4
-InsertNewlineAtEOF: true
-MacroBlockBegin: ''
-MacroBlockEnd: ''
-NamespaceIndentation: All
-SpaceAfterTemplateKeyword: false
-SpaceBeforeParens: Never
-SpaceBeforeRangeBasedForLoopColon: false
-SpaceInEmptyParentheses: false
-SpacesInAngles: false
-SpacesInConditionalStatement: false
-SpacesInCStyleCastParentheses: false
-SpacesInParentheses: false
-SortIncludes: false
-TabWidth: 4
+  - Regex: '^<.*'                  # 系统头文件（<...>）
+    Priority: 1                    # 优先级 1
+  - Regex: '^".*'                 # 本地头文件（"..."）
+    Priority: 2                    # 优先级 2
+  - Regex: '.*'                    # 其他头文件
+    Priority: 3                    # 优先级 3
+IncludeIsMainRegex: '([-_](test|unittest))?$' # 识别主文件的正则表达式
 ...
