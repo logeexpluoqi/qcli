@@ -23,22 +23,22 @@ private:
 
 public:
     inline static std::vector<Cmd> cmd_list;
-    inline static QShell *cli_{ nullptr };
-    static int init(QShell &cli)
+    inline static QShell *cli{ nullptr };
+    static int init(QShell &inst)
     {
         static bool inited = false;
         if(inited) {
             return -1;
         }
-        if(cli_ != nullptr) {
+        if(cli != nullptr) {
             return -1;
         }
-        cli_ = &cli;
-        for(auto &cmd: cmd_list) {
+        cli = &inst;
+        for(auto &cmd : cmd_list) {
             if(cmd.parent.empty()) {
-                cli.cmd_add(cmd.name.c_str(), cmd.cb, cmd.help.c_str());
+                inst.cmd_add(cmd.name.c_str(), cmd.cb, cmd.help.c_str());
             } else {
-                cli.cmd_sub_add(cmd.parent.c_str(), cmd.name.c_str(), cmd.cb, cmd.help.c_str());
+                inst.cmd_sub_add(cmd.parent.c_str(), cmd.name.c_str(), cmd.cb, cmd.help.c_str());
             }
         }
 
@@ -64,14 +64,14 @@ using CmdTable = QShell::ArgsTable;
 #define CMD_SUB_REGIST(parent, name, cb, help) static CmdMgr __cmd_##cb(parent, name, cb, help)
 
 /* trick to parse command line arguments */
-#define CMD_ARGS_TRICK(argc, argv, table)                                 \
-    if(CmdMgr::cli_ == nullptr) {                                         \
-        return -1;                                                        \
-    }                                                                     \
-    if(ISARGV(1, ?) && ISARGC(2)) {                                       \
-        return CmdMgr::cli_->args_help(table, sizeof(table));             \
-    } else {                                                              \
-        return CmdMgr::cli_->args_exec(argc, argv, table, sizeof(table)); \
+#define CMD_ARGS_TRICK(argc, argv, table)                                \
+    if(CmdMgr::cli == nullptr) {                                         \
+        return -1;                                                       \
+    }                                                                    \
+    if(ISARGV(1, ?) && ISARGC(2)) {                                      \
+        return CmdMgr::cli->args_help(table, sizeof(table));             \
+    } else {                                                             \
+        return CmdMgr::cli->args_exec(argc, argv, table, sizeof(table)); \
     }
 #else
 #define CmdTable ((void)0)
