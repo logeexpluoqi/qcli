@@ -29,6 +29,7 @@ NamespaceIndentation: All          # 命名空间缩进：全部缩进
 
 # 换行相关配置
 AlwaysBreakTemplateDeclarations: Yes # 模板声明总是换行：是
+PenaltyReturnTypeOnItsOwnLine: 10000
 BinPackParameters: false           # 参数打包：关闭
 BreakBeforeBraces: Custom          # 大括号前换行：自定义
 BreakConstructorInitializers: AfterColon # 构造函数初始化列表换行位置：冒号后
@@ -38,7 +39,7 @@ ConstructorInitializerAllOnOneLineOrOnePerLine: false # 构造函数初始化列
 # 空格相关配置
 SpaceAfterTemplateKeyword: false   # 模板关键字后空格：关闭
 SpaceBeforeParens: Never           # 括号前空格：从不
-SpaceBeforeRangeBasedForLoopColon: false # 基于范围的 for 循环冒号前空格：关闭
+SpaceBeforeRangeBasedForLoopColon: true # 基于范围的 for 循环冒号前空格：关闭
 SpaceInEmptyParentheses: false     # 空括号内空格：关闭
 SpacesInAngles: false              # 尖括号内空格：关闭
 SpacesInConditionalStatement: false # 条件语句内空格：关闭
@@ -85,3 +86,4 @@ IncludeCategories:
     Priority: 3                    # 优先级 3
 IncludeIsMainRegex: '([-_](test|unittest))?$' # 识别主文件的正则表达式
 ...
+

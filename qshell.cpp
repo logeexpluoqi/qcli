@@ -269,7 +269,7 @@ void QShell::exec()
         if(c == 3) { // ctrl+c
             cli.print("\33[2K");
             cli.print("\033[H\033[J");
-            cli.print("\r\n -Q$hell Exit-\r\n");
+            cli.print("\r\n -QSH EXIT-\r\n");
             break;
         }
 
@@ -348,7 +348,7 @@ int QShell::args_help(ArgsTable *table, size_t sz)
 
 int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size)
 {
-    return qcli_args(argc, argv, table, table_size);
+    return qcli_args_trick(argc, argv, table, table_size);
 }
 
 void QShell::title(void)

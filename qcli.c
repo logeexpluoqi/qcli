@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-02 22:52:47
+ * Last Modified: 2026-04-06 20:44:11
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -57,7 +57,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _QCLI_CSAP_BBAR "\033[5SPq"    // cursor shape blinking bar
 #define _QCLI_CSAP_SBAR "\033[6SPq"    // cursor shape steady bar
 
-#define QCLI_ENTRY(ptr, type, member) ((type *)((char *)(ptr) - (uintptr_t) & ((type *)0)->member))
+#define QCLI_ENTRY(ptr, type, member) ((type *)((char *)(ptr) - (uintptr_t)&((type *)0)->member))
 #define QCLI_ITERATOR(node, cmds)     for(node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list) \
     for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
@@ -789,7 +789,7 @@ int qcli_title(QCliObj *cli)
     return 0;
 }
 
-int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage)
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage)
 {
     if(!cli || !cmd || !cb) {
         return -1;
@@ -1119,7 +1119,7 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name)
     return cmd_find_in_list_(&cli->cmds, name);
 }
 
-int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage)
+int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage)
 {
     if(!parent || !cmd || !cb) {
         return -1;
@@ -1149,13 +1149,13 @@ QCliCmd *qcli_sub_find(QCliCmd *parent, const char *name)
     return cmd_find_in_list_(&parent->subcmds, name);
 }
 
-int qcli_args(int argc, char **argv, const QCliArgsTable *table, size_t table_size)
+int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_size)
 {
     if(!table || argc < 2) {
         return QCLI_ERR_PARAM;
     }
 
-    size_t n = table_size / sizeof(QCliArgsTable);
+    size_t n = table_size / sizeof(QcliTable);
 
     argc -= 1;
     for(size_t i = 0; i < n; i++) {

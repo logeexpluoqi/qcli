@@ -28,17 +28,10 @@
 
 #define ISARGC(n) (argc == n)
 
-#define QSHELL_TABLE_EXEC(cli, argc, argv, sub_cmd_table)                       \
-        if(ISARGV(1, ?) && ISARGC(2)) {                                         \
-        return cli.args_help(sub_cmd_table, sizeof(sub_cmd_table));             \
-    } else {                                                                    \
-        return cli.args_exec(argc, argv, sub_cmd_table, sizeof(sub_cmd_table)); \
-    }
-
 class QShell {
 public:
     // Constructor for QShell, initializes the shell with a print function and a get character function
-    using ArgsTable = QCliArgsTable;
+    using ArgsTable = QcliTable;
     typedef int (*GetChFunc)(void);
     using Hook = std::function<void()>;
     QShell(QCliPrint print, GetChFunc getch);
@@ -107,21 +100,6 @@ private:
 
     // Function pointer to the get character function
     GetChFunc getch;
-};
-
-class QShellObj {
-public:
-    static QShell &obj()
-    {
-        static QShell obj(std::printf, nullptr);
-        return obj;
-    }
-
-private:
-    QShellObj() = default;
-    ~QShellObj() = default;
-    QShellObj(const QShellObj &) = delete;
-    QShellObj &operator=(const QShellObj &) = delete;
 };
 
 #endif

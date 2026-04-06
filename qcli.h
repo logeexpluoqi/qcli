@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-01 22:57:28
+ * Last Modified: 2026-04-06 20:44:6
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -18,8 +18,8 @@
  * @copyright (c) 2025 <*****>
  */
 
-#ifndef _QCLI_H
-#define _QCLI_H
+#ifndef _QCLI_H_
+#define _QCLI_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -97,7 +97,7 @@ typedef enum {
  * @param argv Array of argument strings.
  * @return Error code.
  */
-typedef int (*QCliCallback)(int, char **);
+typedef int (*QcmdCallback)(int, char **);
 
 /**
  * @brief Print function type for output.
@@ -115,7 +115,7 @@ typedef struct QCliCmd QCliCmd; /**< Forward declaration for command. */
 struct QCliCmd {
     QCliObj *cli;           /**< Pointer to the associated CLI object. */
     const char *name;       /**< Command name. */
-    QCliCallback cb;        /**< Callback function. */
+    QcmdCallback cb;        /**< Callback function. */
     const char *usage;      /**< Usage description. */
     QCliList node;          /**< Linked list node. */
     QCliList subcmds;       /**< Linked list of subcommands. */
@@ -182,9 +182,9 @@ struct QCliObj {
  */
 typedef struct {
     const char *name;  /**< Argument name. */
-    QCliCallback cb;   /**< Callback function. */
+    QcmdCallback cb;   /**< Callback function. */
     const char *usage; /**< Usage description. */
-} QCliArgsTable;
+} QcliTable;
 
 /**
  * @brief Execute arguments from a table.
@@ -194,7 +194,7 @@ typedef struct {
  * @param table_size Size of the table.
  * @return Error code.
  */
-int qcli_args(int argc, char **argv, const QCliArgsTable *table, size_t table_size);
+int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_size);
 
 /**
  * @brief Initialize the CLI object.
@@ -220,7 +220,7 @@ int qcli_title(QCliObj *cli);
  * @param usage Usage string.
  * @return Error code.
  */
-int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
+int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage);
 
 /**
  * @brief Delete a command from the CLI.
@@ -255,7 +255,7 @@ QCliCmd *qcli_find(QCliObj *cli, const char *name);
  * @param usage Usage string.
  * @return Error code.
  */
-int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QCliCallback cb, const char *usage);
+int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage);
 
 /**
  * @brief Find a subcommand by name in a parent command.
