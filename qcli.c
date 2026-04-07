@@ -1,12 +1,13 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-06 20:44:11
+ * Last Modified: 2026-04-07 18:25:49
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
  */
 
+#include <stdbool.h>
 #include "qcli.h"
 
 static const char *_CLEAR_LINE = "\r\x1b[K";
@@ -57,7 +58,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define _QCLI_CSAP_BBAR "\033[5SPq"    // cursor shape blinking bar
 #define _QCLI_CSAP_SBAR "\033[6SPq"    // cursor shape steady bar
 
-#define QCLI_ENTRY(ptr, type, member) ((type *)((char *)(ptr) - (uintptr_t)&((type *)0)->member))
+#define QCLI_ENTRY(ptr, type, member) ((type *)((char *)(ptr) - (uintptr_t) & ((type *)0)->member))
 #define QCLI_ITERATOR(node, cmds)     for(node = (cmds)->next; node != (cmds); node = node->next)
 #define QCLI_ITERATOR_SAFE(node, cache, list) \
     for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
@@ -494,14 +495,14 @@ static inline void usage_print_(QCliObj *cli, const char *usage, int indent_col)
 {
     size_t remain_len = _strlen(usage);
     size_t offset = 0;
-    uint8_t first_line = 1;
+    bool first_line = true;
 
     while(remain_len > 0) {
         size_t print_len = (remain_len > QCLI_USAGE_DISP_MAX) ? QCLI_USAGE_DISP_MAX : remain_len;
 
         if(first_line) {
             cli->print("%-.*s\r\n", print_len, usage);
-            first_line = 0;
+            first_line = false;
         } else {
             cli->print("%*s%-.*s\r\n", indent_col, "", print_len, usage + offset);
         }
@@ -519,11 +520,11 @@ static int help_cb_(int argc, char **argv)
 
     // cli pointer is always at the last argument position for built-in commands
     QCliObj *cli = (QCliObj *)argv[argc - 1];
-    int show_sub = 0; // 0: don't show subcommands, 1: show subcommands
+    bool show_sub = false; // 0: don't show subcommands, 1: show subcommands
 
     // Check for -a flag to show subcommands (must be exact: argc == 3 means "?" "-a" cli)
-    if(argc == 3 && _strcmp(argv[1], "-a") == 0) {
-        show_sub = 1;
+    if(argc == 3 && _strcmp(argv[1], "-l") == 0) {
+        show_sub = true;
     } else if(argc > 3) {
         return QCLI_ERR_PARAM;
     }
@@ -565,7 +566,12 @@ static int help_cb_(int argc, char **argv)
         QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
 
         // Mark commands with subcommands with '>'
-        char marker = cmd->has_subcmds ? '>' : ' ';
+        char marker = ' ';
+        if(show_sub) {
+            marker = cmd->has_subcmds ? '*' : ' ';
+        } else {
+            marker = cmd->has_subcmds ? '>' : ' ';
+        }
 
         // Calculate padding: " " (1) + marker (1) + name (max_cmd) + padding to reach column 20
         int header_len = 2 + max_cmd;
@@ -585,7 +591,7 @@ static int help_cb_(int argc, char **argv)
                 int sub_offset = QCLI_USAGE_OFFSET + QCLI_SUBCMD_INDENT;
                 int sub_pad = (sub_offset > sub_header) ? (sub_offset - sub_header) : 1;
 
-                cli->print("   %-*s%*s", max_sub, subcmd->name, sub_pad, "");
+                cli->print("  - %-*s%*s", max_sub, subcmd->name, sub_pad, "");
                 usage_print_(cli, subcmd->usage, sub_offset);
             }
         }
@@ -761,7 +767,7 @@ int qcli_init(QCliObj *cli, QCliPrint print)
     cli->history_recall_times = 0;
     _memset(cli->args, 0, sizeof(cli->args));
     _memset(&cli->argv, 0, sizeof(cli->argv));
-    qcli_add(cli, &cli->_help, "?", help_cb_, "help");
+    qcli_add(cli, &cli->_help, "?", help_cb_, "[-l]: list sub, help");
     qcli_add(cli, &cli->_clear, "clear", clear_cb_, "clear screen");
     qcli_add(cli, &cli->_history, "hs", history_cb_, "show history");
     qcli_add(cli, &cli->_disp, "disp", disp_cb_, "display off or on");
