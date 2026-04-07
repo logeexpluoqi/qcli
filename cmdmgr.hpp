@@ -37,7 +37,11 @@ public:
         for(auto &cmd : cmd_list) {
             if(cmd.parent.empty()) {
                 inst.cmd_add(cmd.name.c_str(), cmd.cb, cmd.help.c_str());
-            } else {
+            }
+        }
+
+        for(auto &cmd : cmd_list) {
+            if(!cmd.parent.empty()) {
                 inst.cmd_sub_add(cmd.parent.c_str(), cmd.name.c_str(), cmd.cb, cmd.help.c_str());
             }
         }
@@ -58,7 +62,7 @@ public:
 using CmdTable = QShell::ArgsTable;
 
 #define DBG_PRINTLN(fmt, ...) CmdMgr::cli->println(fmt, ##__VA_ARGS__)
-#define DBG_PRINT(fmt, ...) CmdMgr::cli->print(fmt, ##__VA_ARGS__)
+#define DBG_PRINT(fmt, ...)   CmdMgr::cli->print(fmt, ##__VA_ARGS__)
 
 /* register a new command */
 #define CMD_REGIST(name, cb, help) static CmdMgr __cmd_##cb(name, cb, help)
@@ -77,9 +81,9 @@ using CmdTable = QShell::ArgsTable;
         return CmdMgr::cli->args_exec(argc, argv, table, sizeof(table)); \
     }
 #else
-#define CmdTable ((void)0)
+#define CmdTable              ((void)0)
 #define DBG_PRINTLN(fmt, ...) ((void)0)
-#define DBG_PRINT(fmt, ...) ((void)0)
+#define DBG_PRINT(fmt, ...)   ((void)0)
 #define CMD_REGIST(name, cb, help)
 #define CMD_SUB_REGIST(parent, name, cb, help)
 #define CMD_ARGS_TRICK(argc, argv, table)
