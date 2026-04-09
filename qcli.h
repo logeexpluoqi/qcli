@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-06 20:44:6
+ * Last Modified: 2026-04-09 13:58:33
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -34,9 +34,9 @@ extern "C" {
  * If not defined, custom implementations are used.
  */
 #ifndef QCLI_USE_STDLIBC
-#define __QCLI_USE_STDLIBCC 0
+#define QCLI_USE_STDLIBC_ 0
 #else
-#define __QCLI_USE_STDLIBCC 1
+#define QCLI_USE_STDLIBC_ 1
 #endif
 
 /**

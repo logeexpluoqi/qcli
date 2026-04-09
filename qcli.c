@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-07 18:25:49
+ * Last Modified: 2026-04-09 13:58:39
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -63,7 +63,7 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 #define QCLI_ITERATOR_SAFE(node, cache, list) \
     for(node = (list)->next, cache = node->next; node != (list); node = cache, cache = node->next)
 
-#if __QCLI_USE_STDLIBCC
+#if QCLI_USE_STDLIBC_
 #include <string.h>
 #define _memcpy  memcpy
 #define _memset  memset
