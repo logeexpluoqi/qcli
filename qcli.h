@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-10 11:22:22
+ * Last Modified: 2026-04-10 11:34:27
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -108,13 +108,13 @@ typedef int (*QcmdCallback)(int, char **);
  */
 typedef int (*QcliPrint)(const char *fmt, ...);
 
-typedef struct QCliObj QCliObj; /**< Forward declaration for CLI object. */
+typedef struct Qcli Qcli; /**< Forward declaration for CLI object. */
 /**
  * @brief Structure representing a CLI command.
  */
 typedef struct QcliCmd QcliCmd; /**< Forward declaration for command. */
 struct QcliCmd {
-    QCliObj *cli;           /**< Pointer to the associated CLI object. */
+    Qcli *cli;           /**< Pointer to the associated CLI object. */
     const char *name;       /**< Command name. */
     QcmdCallback cb;        /**< Callback function. */
     const char *desc;       /**< Usage description. */
@@ -138,7 +138,7 @@ typedef struct {
 /**
  * @brief Structure representing the CLI object.
  */
-struct QCliObj {
+struct Qcli {
     char args[QCLI_CMD_STR_MAX + 1];   /**< Input argument buffer. */
     char *argv[QCLI_CMD_ARGC_MAX + 1]; /**< Parsed argument pointers. */
     QcliRb history;                    /**< Command history ring buffer. */
@@ -192,14 +192,14 @@ int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_
  * @param print Print function.
  * @return Error code.
  */
-int qcli_init(QCliObj *cli, QcliPrint print);
+int qcli_init(Qcli *cli, QcliPrint print);
 
 /**
  * @brief Display the CLI title.
  * @param cli Pointer to CLI object.
  * @return Error code.
  */
-int qcli_title(QCliObj *cli);
+int qcli_title(Qcli *cli);
 
 /**
  * @brief Add a command to the CLI.
@@ -210,7 +210,7 @@ int qcli_title(QCliObj *cli);
  * @param desc Usage string.
  * @return Error code.
  */
-int qcli_add(QCliObj *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc);
+int qcli_add(Qcli *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc);
 
 /**
  * @brief Delete a command from the CLI.
@@ -218,7 +218,7 @@ int qcli_add(QCliObj *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, cons
  * @param name Command name.
  * @return Error code.
  */
-int qcli_del(QCliObj *cli, const char *name);
+int qcli_del(Qcli *cli, const char *name);
 
 /**
  * @brief Insert a command at the beginning of the command list.
@@ -226,7 +226,7 @@ int qcli_del(QCliObj *cli, const char *name);
  * @param cmd Pointer to command structure.
  * @return Error code.
  */
-int qcli_insert(QCliObj *cli, QcliCmd *cmd);
+int qcli_insert(Qcli *cli, QcliCmd *cmd);
 
 /**
  * @brief Find a command by name.
@@ -234,7 +234,7 @@ int qcli_insert(QCliObj *cli, QcliCmd *cmd);
  * @param name Command name.
  * @return Pointer to command or NULL.
  */
-QcliCmd *qcli_find(QCliObj *cli, const char *name);
+QcliCmd *qcli_find(Qcli *cli, const char *name);
 
 /**
  * @brief Add a subcommand to a parent command.
@@ -261,7 +261,7 @@ QcliCmd *qcli_sub_find(QcliCmd *parent, const char *name);
  * @param c Input character.
  * @return Error code.
  */
-int qcli_exec(QCliObj *cli, char c);
+int qcli_exec(Qcli *cli, char c);
 
 /**
  * @brief Echo a command string to the CLI.
@@ -269,7 +269,7 @@ int qcli_exec(QCliObj *cli, char c);
  * @param str Command string.
  * @return Error code.
  */
-int qcli_xstr(QCliObj *cli, char *str);
+int qcli_xstr(Qcli *cli, char *str);
 
 #ifdef __cplusplus
 }

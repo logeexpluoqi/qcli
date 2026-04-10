@@ -94,7 +94,7 @@ private:
     bool is_exit{ false };
 
     // CLI object for handling command line interface operations
-    QCliObj cli;
+    Qcli cli;
 
     std::vector<uintptr_t> cmds_addr;
 
