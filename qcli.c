@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-04-09 13:58:39
+ * Last Modified: 2026-04-10 11:23:24
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description:
@@ -65,15 +65,15 @@ static const char *_CLEAR_DISP = "\033[H\033[2J";
 
 #if QCLI_USE_STDLIBC_
 #include <string.h>
-#define _memcpy  memcpy
-#define _memset  memset
-#define _strlen  strlen
-#define _strcpy  strcpy
-#define _strcmp  strcmp
-#define _strncmp strncmp
+#define memcpy_  memcpy
+#define memset_  memset
+#define strlen_  strlen
+#define strcpy_  strcpy
+#define strcmp_  strcmp
+#define strncmp_ strncmp
 #else
 
-static inline void *_memcpy(void *dst, const void *src, size_t sz)
+static inline void *memcpy_(void *dst, const void *src, size_t sz)
 {
     if(!dst || !src) {
         return NULL;
@@ -86,7 +86,7 @@ static inline void *_memcpy(void *dst, const void *src, size_t sz)
     return dst;
 }
 
-static void *_memset(void *dest, int c, size_t n)
+static void *memset_(void *dest, int c, size_t n)
 {
     if(!dest) {
         return NULL;
@@ -99,7 +99,7 @@ static void *_memset(void *dest, int c, size_t n)
     return dest;
 }
 
-static size_t _strlen(const char *s)
+static size_t strlen_(const char *s)
 {
     if(!s) {
         return 0;
@@ -111,7 +111,7 @@ static size_t _strlen(const char *s)
     return s - start;
 }
 
-static char *_strcpy(char *dest, const char *src)
+static char *strcpy_(char *dest, const char *src)
 {
     if(!dest || !src) {
         return NULL;
@@ -122,7 +122,7 @@ static char *_strcpy(char *dest, const char *src)
     return org_dest;
 }
 
-static int _strcmp(const char *s1, const char *s2)
+static int strcmp_(const char *s1, const char *s2)
 {
     if(!s1 || !s2) {
         return -1;
@@ -134,7 +134,7 @@ static int _strcmp(const char *s1, const char *s2)
     return *(const uint8_t *)s1 - *(const uint8_t *)s2;
 }
 
-static int _strncmp(const char *s1, const char *s2, size_t n)
+static int strncmp_(const char *s1, const char *s2, size_t n)
 {
     if(!s1 || !s2) {
         return -1;
@@ -154,71 +154,10 @@ static int _strncmp(const char *s1, const char *s2, size_t n)
 }
 #endif
 
-// Hash table functions for fast command lookup
-#define QCLI_HASH_TABLE_SIZE 32
-
-static size_t hash_(const char *str, size_t size)
-{
-    size_t hash = 0;
-    while(*str) {
-        hash = (hash * 31 + *str++) % size;
-    }
-    return hash;
-}
-
-static void hash_init_(QCliHashTable *table)
-{
-    static QCliCmd *buckets[QCLI_HASH_TABLE_SIZE] = { 0 };
-    table->buckets = buckets;
-    table->size = QCLI_HASH_TABLE_SIZE;
-    table->count = 0;
-}
-
-static void hash_add_(QCliHashTable *table, QCliCmd *cmd)
-{
-    size_t hash_val = hash_(cmd->name, table->size);
-    cmd->next = table->buckets[hash_val];
-    table->buckets[hash_val] = cmd;
-    table->count++;
-}
-
-static QCliCmd *hash_find_(QCliHashTable *table, const char *name)
-{
-    size_t hash_val = hash_(name, table->size);
-    QCliCmd *cmd = table->buckets[hash_val];
-    while(cmd) {
-        if(_strcmp(cmd->name, name) == 0) {
-            return cmd;
-        }
-        cmd = cmd->next;
-    }
-    return NULL;
-}
-
-static void hash_remove_(QCliHashTable *table, const char *name)
-{
-    size_t hash_val = hash_(name, table->size);
-    QCliCmd *cmd = table->buckets[hash_val];
-    QCliCmd *prev = NULL;
-    while(cmd) {
-        if(_strcmp(cmd->name, name) == 0) {
-            if(prev) {
-                prev->next = cmd->next;
-            } else {
-                table->buckets[hash_val] = cmd->next;
-            }
-            table->count--;
-            return;
-        }
-        prev = cmd;
-        cmd = cmd->next;
-    }
-}
-
-static inline void rb_reset_(QCliRingBuffer *buf)
+static inline void rb_reset_(QcliRb *buf)
 {
     for(size_t i = 0; i < buf->capacity; i++) {
-        _memset(buf->entries[i], 0, QCLI_CMD_STR_MAX + 1);
+        memset_(buf->entries[i], 0, QCLI_CMD_STR_MAX + 1);
     }
     buf->head = 0;
     buf->tail = 0;
@@ -226,19 +165,19 @@ static inline void rb_reset_(QCliRingBuffer *buf)
 }
 
 // Ring buffer functions for history management
-static void rb_init_(QCliRingBuffer *buf, size_t capacity)
+static void rb_init_(QcliRb *buf, size_t capacity)
 {
     rb_reset_(buf);
     buf->capacity = capacity;
 }
 
-static void rb_add_(QCliRingBuffer *buf, const char *cmd, uint16_t size)
+static void rb_add_(QcliRb *buf, const char *cmd, uint16_t size)
 {
     if(size > QCLI_CMD_STR_MAX) {
         size = QCLI_CMD_STR_MAX;
     }
-    _memset(buf->entries[buf->head], 0, QCLI_CMD_STR_MAX + 1);
-    _memcpy(buf->entries[buf->head], cmd, size);
+    memset_(buf->entries[buf->head], 0, QCLI_CMD_STR_MAX + 1);
+    memcpy_(buf->entries[buf->head], cmd, size);
     buf->entries[buf->head][size] = '\0';
     buf->head = (buf->head + 1) % buf->capacity;
     if(buf->count < buf->capacity) {
@@ -248,7 +187,7 @@ static void rb_add_(QCliRingBuffer *buf, const char *cmd, uint16_t size)
     }
 }
 
-static const char *rb_get_(QCliRingBuffer *buf, size_t index)
+static const char *rb_get_(QcliRb *buf, size_t index)
 {
     if(index >= buf->count) {
         return NULL;
@@ -263,7 +202,7 @@ static char *strinsert_(char *s, size_t offset, const char *c, size_t size)
         return NULL;
     }
 
-    size_t len = _strlen(s);
+    size_t len = strlen_(s);
     if(offset > len) {
         return NULL;
     }
@@ -292,7 +231,7 @@ static void *strdelete_(char *s, size_t offset, size_t size)
         return NULL;
     }
 
-    size_t len = _strlen(s);
+    size_t len = strlen_(s);
     if(offset >= len) {
         return NULL;
     }
@@ -312,7 +251,7 @@ static void *strdelete_(char *s, size_t offset, size_t size)
     return s;
 }
 
-static inline void list_insert_(QCliList *list, QCliList *node)
+static inline void list_insert_(QcliList *list, QcliList *node)
 {
     list->next->prev = node;
     node->next = list->next;
@@ -321,7 +260,7 @@ static inline void list_insert_(QCliList *list, QCliList *node)
     node->prev = list;
 }
 
-static inline void list_remove_(QCliList *node)
+static inline void list_remove_(QcliList *node)
 {
     node->next->prev = node->prev;
     node->prev->next = node->next;
@@ -329,22 +268,16 @@ static inline void list_remove_(QCliList *node)
     node->next = node->prev = node;
 }
 
-static int cmd_exists_(QCliObj *cli, QCliCmd *cmd)
+static int cmd_exists_(QCliObj *cli, QcliCmd *cmd)
 {
     if(!cli || !cmd) {
         return -1;
     }
-    // Use hash table for fast lookup
-    QCliCmd *_cmd = hash_find_(&cli->cmd_table, cmd->name);
-    if(_cmd) {
-        return 1;
-    }
-    // Fallback to linear search if not found in hash table
-    QCliList *_node;
+    QcliList *_node;
     QCLI_ITERATOR(_node, &cli->cmds)
     {
-        _cmd = QCLI_ENTRY(_node, QCliCmd, node);
-        if(_strcmp(_cmd->name, cmd->name) == 0) {
+        QcliCmd *_cmd = QCLI_ENTRY(_node, QcliCmd, node);
+        if(strcmp_(_cmd->name, cmd->name) == 0) {
             return 1;
         }
     }
@@ -353,22 +286,22 @@ static int cmd_exists_(QCliObj *cli, QCliCmd *cmd)
 
 static inline void cli_reset_buffer_(QCliObj *cli)
 {
-    _memset(cli->args, 0, sizeof(cli->args));
-    _memset(&cli->argv, 0, cli->argc * sizeof(char *));
+    memset_(cli->args, 0, sizeof(cli->args));
+    memset_(&cli->argv, 0, cli->argc * sizeof(char *));
     cli->args_size = 0;
-    cli->args_index = 0;
+    cli->cursor_idx = 0;
     cli->argc = 0;
-    cli->history_recall_times = 0;
-    cli->history_recall_index = cli->history_index;
+    cli->hist_recall_times = 0;
+    cli->hist_recall_idx = cli->hist_idx;
 }
 
-static QCliCmd *cmd_find_in_list_(QCliList *list, const char *name)
+static QcliCmd *cmd_find_in_list_(QcliList *list, const char *name)
 {
-    QCliList *node;
+    QcliList *node;
     QCLI_ITERATOR(node, list)
     {
-        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-        if(_strcmp(cmd->name, name) == 0) {
+        QcliCmd *cmd = QCLI_ENTRY(node, QcliCmd, node);
+        if(strcmp_(cmd->name, name) == 0) {
             return cmd;
         }
     }
@@ -391,18 +324,18 @@ static void tab_complete_(QCliObj *cli)
     }
 
     // Determine if we're completing a subcommand or regular command
-    QCliList *list = &cli->cmds;
+    QcliList *list = &cli->cmds;
     char *part = NULL;
     size_t part_len = 0;
 
     if(pos != NULL) {
         // Has space, try to find parent command and complete subcommand
         *pos = '\0';
-        QCliCmd *parent_cmd = qcli_find(cli, cmd);
+        QcliCmd *parent_cmd = qcli_find(cli, cmd);
         *pos = _KEY_SPACE;
 
-        if(parent_cmd && parent_cmd->has_subcmds) {
-            list = &parent_cmd->subcmds;
+        if(parent_cmd && parent_cmd->hierarchy) {
+            list = &parent_cmd->sublevel;
             part = pos + 1;
             part_len = cli->args_size - (part - cli->args);
         } else {
@@ -418,11 +351,11 @@ static void tab_complete_(QCliObj *cli)
     int cnt = 0;
     const char *last = NULL;
 
-    QCliList *node;
+    QcliList *node;
     QCLI_ITERATOR(node, list)
     {
-        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-        if(_strncmp(part, cmd->name, part_len) == 0) {
+        QcliCmd *cmd = QCLI_ENTRY(node, QcliCmd, node);
+        if(strncmp_(part, cmd->name, part_len) == 0) {
             cnt++;
             last = cmd->name;
         }
@@ -430,10 +363,10 @@ static void tab_complete_(QCliObj *cli)
 
     if(cnt == 1) {
         size_t pre_len = part - cli->args;
-        _memset(cli->args + pre_len, 0, QCLI_CMD_STR_MAX - pre_len);
-        _strcpy(cli->args + pre_len, last);
-        cli->args_size = pre_len + _strlen(last);
-        cli->args_index = cli->args_size;
+        memset_(cli->args + pre_len, 0, QCLI_CMD_STR_MAX - pre_len);
+        strcpy_(cli->args + pre_len, last);
+        cli->args_size = pre_len + strlen_(last);
+        cli->cursor_idx = cli->args_size;
         if(cli->flags.is_disp) {
             cli->print("\r%s%s", _PREFIX, cli->args);
         }
@@ -443,8 +376,8 @@ static void tab_complete_(QCliObj *cli)
         }
         QCLI_ITERATOR(node, list)
         {
-            QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-            if(_strncmp(part, cmd->name, part_len) == 0) {
+            QcliCmd *cmd = QCLI_ENTRY(node, QcliCmd, node);
+            if(strncmp_(part, cmd->name, part_len) == 0) {
                 if(cli->flags.is_disp) {
                     cli->print("%s  ", cmd->name);
                 }
@@ -475,9 +408,9 @@ static int disp_cb_(int argc, char **argv)
         return QCLI_ERR_PARAM;
     }
     QCliObj *cli = (QCliObj *)argv[2];
-    if(_strcmp(argv[1], "on") == 0) {
+    if(strcmp_(argv[1], "on") == 0) {
         cli->flags.is_disp = 1;
-    } else if(_strcmp(argv[1], "off") == 0) {
+    } else if(strcmp_(argv[1], "off") == 0) {
         cli->flags.is_disp = 0;
     } else {
         cli->print(" disp on/off\r\n");
@@ -490,10 +423,10 @@ static int disp_cb_(int argc, char **argv)
 #define QCLI_USAGE_OFFSET   20 // Fixed column for Usage information
 #define QCLI_SUBCMD_INDENT  2  // Subcommand Usage indent relative to main command
 
-// Helper function to print usage text with proper line wrapping and alignment
-static inline void usage_print_(QCliObj *cli, const char *usage, int indent_col)
+// Helper function to print desc text with proper line wrapping and alignment
+static inline void usage_print_(QCliObj *cli, const char *desc, int indent_col)
 {
-    size_t remain_len = _strlen(usage);
+    size_t remain_len = strlen_(desc);
     size_t offset = 0;
     bool first_line = true;
 
@@ -501,10 +434,10 @@ static inline void usage_print_(QCliObj *cli, const char *usage, int indent_col)
         size_t print_len = (remain_len > QCLI_USAGE_DISP_MAX) ? QCLI_USAGE_DISP_MAX : remain_len;
 
         if(first_line) {
-            cli->print("%-.*s\r\n", print_len, usage);
+            cli->print("%-.*s\r\n", print_len, desc);
             first_line = false;
         } else {
-            cli->print("%*s%-.*s\r\n", indent_col, "", print_len, usage + offset);
+            cli->print("%*s%-.*s\r\n", indent_col, "", print_len, desc + offset);
         }
 
         offset += print_len;
@@ -523,7 +456,7 @@ static int help_cb_(int argc, char **argv)
     bool show_sub = false; // 0: don't show subcommands, 1: show subcommands
 
     // Check for -a flag to show subcommands (must be exact: argc == 3 means "?" "-a" cli)
-    if(argc == 3 && _strcmp(argv[1], "-l") == 0) {
+    if(argc == 3 && strcmp_(argv[1], "-l") == 0) {
         show_sub = true;
     } else if(argc > 3) {
         return QCLI_ERR_PARAM;
@@ -533,24 +466,24 @@ static int help_cb_(int argc, char **argv)
         return 0;
     }
 
-    QCliList *node;
+    QcliList *node;
 
     int max_cmd = 0;
     int max_sub = 0;
     QCLI_ITERATOR(node, &cli->cmds)
     {
-        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
-        int len = _strlen(cmd->name);
+        QcliCmd *cmd = QCLI_ENTRY(node, QcliCmd, node);
+        int len = strlen_(cmd->name);
         if(len > max_cmd) {
             max_cmd = len;
         }
 
-        if(cmd->has_subcmds) {
-            QCliList *subnode;
-            QCLI_ITERATOR(subnode, &cmd->subcmds)
+        if(cmd->hierarchy) {
+            QcliList *subnode;
+            QCLI_ITERATOR(subnode, &cmd->sublevel)
             {
-                QCliCmd *subcmd = QCLI_ENTRY(subnode, QCliCmd, node);
-                int sub_len = _strlen(subcmd->name);
+                QcliCmd *subcmd = QCLI_ENTRY(subnode, QcliCmd, node);
+                int sub_len = strlen_(subcmd->name);
                 if(sub_len > max_sub) {
                     max_sub = sub_len;
                 }
@@ -563,14 +496,14 @@ static int help_cb_(int argc, char **argv)
 
     QCLI_ITERATOR(node, &cli->cmds)
     {
-        QCliCmd *cmd = QCLI_ENTRY(node, QCliCmd, node);
+        QcliCmd *cmd = QCLI_ENTRY(node, QcliCmd, node);
 
         // Mark commands with subcommands with '>'
         char marker = ' ';
         if(show_sub) {
-            marker = cmd->has_subcmds ? '*' : ' ';
+            marker = cmd->hierarchy ? '*' : ' ';
         } else {
-            marker = cmd->has_subcmds ? '>' : ' ';
+            marker = cmd->hierarchy ? '>' : ' ';
         }
 
         // Calculate padding: " " (1) + marker (1) + name (max_cmd) + padding to reach column 20
@@ -578,21 +511,21 @@ static int help_cb_(int argc, char **argv)
         int pad = (QCLI_USAGE_OFFSET > header_len) ? (QCLI_USAGE_OFFSET - header_len) : 1;
 
         cli->print(" %c%-*s%*s", marker, max_cmd, cmd->name, pad, "");
-        usage_print_(cli, cmd->usage, QCLI_USAGE_OFFSET);
+        usage_print_(cli, cmd->desc, QCLI_USAGE_OFFSET);
 
         // Display subcommands if -a flag is provided and they exist
-        if(show_sub && cmd->has_subcmds) {
-            QCliList *subnode;
-            QCLI_ITERATOR(subnode, &cmd->subcmds)
+        if(show_sub && cmd->hierarchy) {
+            QcliList *subnode;
+            QCLI_ITERATOR(subnode, &cmd->sublevel)
             {
-                QCliCmd *subcmd = QCLI_ENTRY(subnode, QCliCmd, node);
+                QcliCmd *subcmd = QCLI_ENTRY(subnode, QcliCmd, node);
                 // Subcommands: "   " (3) + name (max_sub) + padding to reach column 22
                 int sub_header = 3 + max_sub;
                 int sub_offset = QCLI_USAGE_OFFSET + QCLI_SUBCMD_INDENT;
                 int sub_pad = (sub_offset > sub_header) ? (sub_offset - sub_header) : 1;
 
                 cli->print("  - %-*s%*s", max_sub, subcmd->name, sub_pad, "");
-                usage_print_(cli, subcmd->usage, sub_offset);
+                usage_print_(cli, subcmd->desc, sub_offset);
             }
         }
     }
@@ -673,11 +606,11 @@ static int parser_(QCliObj *cli, char *str, uint16_t len)
 
 static inline int is_builtin_cmd_(const char *name)
 {
-    return (_strcmp(name, "?") == 0) || (_strcmp(name, "hs") == 0) || (_strcmp(name, "disp") == 0) ||
-           (_strcmp(name, "clear") == 0);
+    return (strcmp_(name, "?") == 0) || (strcmp_(name, "hs") == 0) || (strcmp_(name, "disp") == 0) ||
+           (strcmp_(name, "clear") == 0);
 }
 
-static inline void cmd_exec_(QCliObj *cli, QCliCmd *cmd, int *result)
+static inline void cmd_exec_(QCliObj *cli, QcliCmd *cmd, int *result)
 {
     if(is_builtin_cmd_(cmd->name)) {
         cli->argv[cli->argc++] = (char *)cli;
@@ -712,16 +645,16 @@ static int cmd_cb_(QCliObj *cli)
         return -1;
     }
 
-    QCliList *_node;
-    QCliCmd *_cmd;
+    QcliList *_node;
+    QcliCmd *_cmd;
     int result = 0;
 
     QCLI_ITERATOR(_node, &cli->cmds)
     {
-        _cmd = QCLI_ENTRY(_node, QCliCmd, node);
-        if(_strcmp(cli->argv[0], _cmd->name) == 0) {
-            if(_cmd->has_subcmds && cli->argc > 1) {
-                QCliCmd *subcmd = qcli_sub_find(_cmd, cli->argv[1]);
+        _cmd = QCLI_ENTRY(_node, QcliCmd, node);
+        if(strcmp_(cli->argv[0], _cmd->name) == 0) {
+            if(_cmd->hierarchy && cli->argc > 1) {
+                QcliCmd *subcmd = qcli_sub_find(_cmd, cli->argv[1]);
                 if(subcmd) {
                     cmd_exec_(cli, subcmd, &result);
                 } else {
@@ -746,27 +679,24 @@ static int cmd_cb_(QCliObj *cli)
     return -1;
 }
 
-int qcli_init(QCliObj *cli, QCliPrint print)
+int qcli_init(QCliObj *cli, QcliPrint print)
 {
     if(!cli || !print) {
         return -1;
     }
     cli->cmds.next = cli->cmds.prev = &cli->cmds;
-    // Initialize hash table
-    hash_init_(&cli->cmd_table);
-    // Initialize ring buffer for history management
     rb_init_(&cli->history, QCLI_HISTORY_MAX);
     cli->print = print;
     cli->flags.is_echo = 0;
     cli->flags.is_disp = 1;
     cli->argc = 0;
     cli->args_size = 0;
-    cli->args_index = 0;
-    cli->history_index = 0;
-    cli->history_recall_index = 0;
-    cli->history_recall_times = 0;
-    _memset(cli->args, 0, sizeof(cli->args));
-    _memset(&cli->argv, 0, sizeof(cli->argv));
+    cli->cursor_idx = 0;
+    cli->hist_idx = 0;
+    cli->hist_recall_idx = 0;
+    cli->hist_recall_times = 0;
+    memset_(cli->args, 0, sizeof(cli->args));
+    memset_(&cli->argv, 0, sizeof(cli->argv));
     qcli_add(cli, &cli->_help, "?", help_cb_, "[-l]: list sub, help");
     qcli_add(cli, &cli->_clear, "clear", clear_cb_, "clear screen");
     qcli_add(cli, &cli->_history, "hs", history_cb_, "show history");
@@ -795,21 +725,19 @@ int qcli_title(QCliObj *cli)
     return 0;
 }
 
-int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage)
+int qcli_add(QCliObj *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc)
 {
     if(!cli || !cmd || !cb) {
         return -1;
     }
     cmd->name = name;
     cmd->cb = cb;
-    cmd->usage = usage;
+    cmd->desc = desc;
     cmd->parent = NULL;
-    cmd->next = NULL;
-    cmd->has_subcmds = 0;
-    cmd->subcmds.next = cmd->subcmds.prev = &cmd->subcmds;
+    cmd->hierarchy = 0;
+    cmd->sublevel.next = cmd->sublevel.prev = &cmd->sublevel;
     if(!cmd_exists_(cli, cmd)) {
         list_insert_(&cli->cmds, &cmd->node);
-        hash_add_(&cli->cmd_table, cmd);
         cmd->cli = cli;
         return 0;
     } else {
@@ -819,17 +747,16 @@ int qcli_add(QCliObj *cli, QCliCmd *cmd, const char *name, QcmdCallback cb, cons
 
 int qcli_del(QCliObj *cli, const char *name)
 {
-    QCliCmd *_cmd = qcli_find(cli, name);
+    QcliCmd *_cmd = qcli_find(cli, name);
     if(!_cmd) {
         return -1;
     }
     list_remove_(&_cmd->node);
-    hash_remove_(&cli->cmd_table, name);
     _cmd->cli = NULL;
     return 0;
 }
 
-int qcli_insert(QCliObj *cli, QCliCmd *cmd)
+int qcli_insert(QCliObj *cli, QcliCmd *cmd)
 {
     if(!cli || !cmd) {
         return -1;
@@ -849,19 +776,19 @@ int qcli_insert(QCliObj *cli, QCliCmd *cmd)
 static void history_nav_(QCliObj *cli, int direction)
 {
     if(direction == QCLI_HS_RECALL_DIR_PREV) {
-        if(cli->history_recall_times < cli->history.count) {
+        if(cli->hist_recall_times < cli->history.count) {
             // Move to previous history entry
-            cli->history_recall_index =
-                    (cli->history_recall_index == 0) ? cli->history.count - 1 : cli->history_recall_index - 1;
-            cli->history_recall_times++;
+            cli->hist_recall_idx =
+                    (cli->hist_recall_idx == 0) ? cli->history.count - 1 : cli->hist_recall_idx - 1;
+            cli->hist_recall_times++;
         } else {
             return;
         }
     } else if(direction == QCLI_HS_RECALL_DIR_NEXT) {
-        if(cli->history_recall_times > 1) {
+        if(cli->hist_recall_times > 1) {
             // Move to next history entry
-            cli->history_recall_index = (cli->history_recall_index + 1) % cli->history.count;
-            cli->history_recall_times--;
+            cli->hist_recall_idx = (cli->hist_recall_idx + 1) % cli->history.count;
+            cli->hist_recall_times--;
         } else {
             // Reset to empty buffer
             cli_reset_buffer_(cli);
@@ -873,15 +800,15 @@ static void history_nav_(QCliObj *cli, int direction)
     }
 
     // Copy history entry to buffer
-    const char *entry = rb_get_(&cli->history, cli->history_recall_index);
+    const char *entry = rb_get_(&cli->history, cli->hist_recall_idx);
     if(entry) {
-        _memset(cli->args, 0, sizeof(cli->args));
-        cli->args_size = _strlen(entry);
+        memset_(cli->args, 0, sizeof(cli->args));
+        cli->args_size = strlen_(entry);
         if(cli->args_size > QCLI_CMD_STR_MAX) {
             cli->args_size = QCLI_CMD_STR_MAX;
         }
-        cli->args_index = cli->args_size;
-        _memcpy(cli->args, entry, cli->args_size);
+        cli->cursor_idx = cli->args_size;
+        memcpy_(cli->args, entry, cli->args_size);
         cli->args[cli->args_size] = '\0'; // Ensure null-termination
 
         if(cli->flags.is_disp) {
@@ -900,19 +827,19 @@ static void special_key_(QCliObj *cli, char c)
         history_nav_(cli, QCLI_HS_RECALL_DIR_NEXT);
         break;
     case _KEY_RIGHT:
-        if(cli->args_index < cli->args_size) {
+        if(cli->cursor_idx < cli->args_size) {
             if(cli->flags.is_disp) {
                 cli->print(_QCLI_CUF(1));
             }
-            cli->args_index++;
+            cli->cursor_idx++;
         }
         break;
     case _KEY_LEFT:
-        if(cli->args_index > 0) {
+        if(cli->cursor_idx > 0) {
             if(cli->flags.is_disp) {
                 cli->print(_QCLI_CUB(1));
             }
-            cli->args_index--;
+            cli->cursor_idx--;
         }
         break;
     default:
@@ -927,7 +854,7 @@ static void history_add_(QCliObj *cli, const char *cmd, uint16_t size)
     rb_add_(&cli->history, cmd, size);
 }
 
-static int handle_special_keys_(QCliObj *cli, char c)
+static int x_special_keys_(QCliObj *cli, char c)
 {
     if(cli->special_key > 0) {
         if(cli->special_key == 1 && c == '\x5b') {
@@ -955,21 +882,21 @@ static int handle_special_keys_(QCliObj *cli, char c)
     return -1; // Not a special key
 }
 
-static int handle_delete_(QCliObj *cli)
+static int x_delete_(QCliObj *cli)
 {
-    if(cli->args_size > 0 && cli->args_index > 0) {
+    if(cli->args_size > 0 && cli->cursor_idx > 0) {
         cli->args_size--;
-        cli->args_index--;
+        cli->cursor_idx--;
 
-        if(cli->args_size == cli->args_index) {
+        if(cli->args_size == cli->cursor_idx) {
             // Deleting at the end of the line
-            cli->args[cli->args_index] = '\0';
+            cli->args[cli->cursor_idx] = '\0';
             if(cli->flags.is_disp) {
                 cli->print("\b \b");
             }
         } else {
             // Deleting in the middle of the line
-            strdelete_(cli->args, cli->args_index, 1);
+            strdelete_(cli->args, cli->cursor_idx, 1);
             if(cli->flags.is_disp) {
                 cli->print(_QCLI_CUB(1));
                 cli->print(_QCLI_DCH(1));
@@ -979,7 +906,7 @@ static int handle_delete_(QCliObj *cli)
     return 0;
 }
 
-static int handle_enter_(QCliObj *cli)
+static int x_enter_(QCliObj *cli)
 {
     if(cli->args_size == 0) {
         if(!cli->flags.is_echo && cli->flags.is_disp) {
@@ -992,10 +919,10 @@ static int handle_enter_(QCliObj *cli)
         cli->print("\r\n");
     }
 
-    if((_strcmp(cli->args, "hs") != 0) && !cli->flags.is_echo) {
+    if((strcmp_(cli->args, "hs") != 0) && !cli->flags.is_echo) {
         if(cli->history.count > 0) {
             const char *last_entry = rb_get_(&cli->history, cli->history.count - 1);
-            if(_strcmp(last_entry, cli->args) != 0) {
+            if(strcmp_(last_entry, cli->args) != 0) {
                 history_add_(cli, cli->args, cli->args_size);
             }
         } else {
@@ -1019,25 +946,25 @@ static int handle_enter_(QCliObj *cli)
     return 0;
 }
 
-static int handle_tab_(QCliObj *cli)
+static int x_tab_(QCliObj *cli)
 {
     tab_complete_(cli);
     return 0;
 }
 
-static int handle_default_char_(QCliObj *cli, char c)
+static int x_default_char_(QCliObj *cli, char c)
 {
     if(cli->args_size >= QCLI_CMD_STR_MAX) {
         return QCLI_ERR_PARAM_MORE; // Buffer full
     }
-    if(cli->args_size == cli->args_index) {
+    if(cli->args_size == cli->cursor_idx) {
         cli->args[cli->args_size++] = c;
-        cli->args_index = cli->args_size;
+        cli->cursor_idx = cli->args_size;
     } else {
         if(cli->args_size + 1 >= QCLI_CMD_STR_MAX) {
             return QCLI_ERR_PARAM_MORE;
         }
-        strinsert_(cli->args, cli->args_index++, &c, 1);
+        strinsert_(cli->args, cli->cursor_idx++, &c, 1);
         cli->args_size++;
         if(cli->flags.is_disp) {
             cli->print(_QCLI_ICH(1));
@@ -1059,36 +986,36 @@ int qcli_exec(QCliObj *cli, char c)
         return -1;
     }
 
-    if(handle_special_keys_(cli, c) == 0) {
+    if(x_special_keys_(cli, c) == 0) {
         return 0;
     }
 
     switch(c) {
     case _KEY_BACKSPACE:
     case _KEY_DEL:
-        return handle_delete_(cli);
+        return x_delete_(cli);
     case _KEY_ENTER:
-        return handle_enter_(cli);
+        return x_enter_(cli);
     case _KEY_TAB:
-        return handle_tab_(cli);
+        return x_tab_(cli);
     default:
-        return handle_default_char_(cli, c);
+        return x_default_char_(cli, c);
     }
 }
 
-int qcli_echo(QCliObj *cli, char *str)
+int qcli_xstr(QCliObj *cli, char *str)
 {
     if(!cli || !str) {
         return -1;
     }
 
-    const uint16_t len = _strlen(str);
+    const uint16_t len = strlen_(str);
     if(len >= QCLI_CMD_STR_MAX) {
         return -1;
     }
 
     // Copy string to args buffer and parse it
-    _memcpy(cli->args, str, len);
+    memcpy_(cli->args, str, len);
     cli->args[len] = '\0';
     cli->args_size = len;
 
@@ -1097,13 +1024,13 @@ int qcli_echo(QCliObj *cli, char *str)
     }
 
     // Find and execute the command
-    QCliList *node;
-    QCliList *node_safe;
-    QCliCmd *cmd;
+    QcliList *node;
+    QcliList *node_safe;
+    QcliCmd *cmd;
     QCLI_ITERATOR_SAFE(node, node_safe, &cli->cmds)
     {
-        cmd = QCLI_ENTRY(node, QCliCmd, node);
-        if(_strcmp(cli->argv[0], cmd->name) == 0) {
+        cmd = QCLI_ENTRY(node, QcliCmd, node);
+        if(strcmp_(cli->argv[0], cmd->name) == 0) {
             return cmd->cb(cli->argc, cli->argv);
         }
     }
@@ -1111,48 +1038,42 @@ int qcli_echo(QCliObj *cli, char *str)
     return -4;
 }
 
-QCliCmd *qcli_find(QCliObj *cli, const char *name)
+QcliCmd *qcli_find(QCliObj *cli, const char *name)
 {
     if(!cli || !name) {
         return NULL;
     }
-    // Use hash table for fast lookup
-    QCliCmd *cmd = hash_find_(&cli->cmd_table, name);
-    if(cmd) {
-        return cmd;
-    }
-    // Fallback to linear search if not found in hash table
     return cmd_find_in_list_(&cli->cmds, name);
 }
 
-int qcli_sub_add(QCliCmd *parent, QCliCmd *cmd, const char *name, QcmdCallback cb, const char *usage)
+int qcli_sub_add(QcliCmd *parent, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc)
 {
     if(!parent || !cmd || !cb) {
         return -1;
     }
     cmd->name = name;
     cmd->cb = cb;
-    cmd->usage = usage;
+    cmd->desc = desc;
     cmd->parent = parent;
-    cmd->has_subcmds = 0;
-    cmd->subcmds.next = cmd->subcmds.prev = &cmd->subcmds;
+    cmd->hierarchy = 0;
+    cmd->sublevel.next = cmd->sublevel.prev = &cmd->sublevel;
     cmd->cli = parent->cli;
 
-    if(cmd_find_in_list_(&parent->subcmds, name)) {
+    if(cmd_find_in_list_(&parent->sublevel, name)) {
         return -1; // Subcommand already exists
     }
 
-    list_insert_(&parent->subcmds, &cmd->node);
-    parent->has_subcmds = 1;
+    list_insert_(&parent->sublevel, &cmd->node);
+    parent->hierarchy = 1;
     return 0;
 }
 
-QCliCmd *qcli_sub_find(QCliCmd *parent, const char *name)
+QcliCmd *qcli_sub_find(QcliCmd *parent, const char *name)
 {
     if(!parent || !name) {
         return NULL;
     }
-    return cmd_find_in_list_(&parent->subcmds, name);
+    return cmd_find_in_list_(&parent->sublevel, name);
 }
 
 int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_size)
@@ -1165,7 +1086,7 @@ int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_
 
     argc -= 1;
     for(size_t i = 0; i < n; i++) {
-        if(_strcmp(table[i].name, argv[1]) == 0) {
+        if(strcmp_(table[i].name, argv[1]) == 0) {
             return table[i].cb(argc, argv + 1);
         }
     }

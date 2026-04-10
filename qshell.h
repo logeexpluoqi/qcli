@@ -34,12 +34,12 @@ public:
     using ArgsTable = QcliTable;
     typedef int (*GetChFunc)(void);
     using Hook = std::function<void()>;
-    QShell(QCliPrint print, GetChFunc getch);
+    QShell(QcliPrint print, GetChFunc getch);
     QShell() = default;
     // Destructor for QShell, cleans up resources
     ~QShell();
 
-    void init(QCliPrint print, GetChFunc getch);
+    void init(QcliPrint print, GetChFunc getch);
 
     void exit_hook_set(Hook hook);
 
@@ -49,14 +49,14 @@ public:
     // Typedef for command handler function
     typedef int (*QShellCmdHandler)(int argc, char **argv);
 
-    // Adds a command to the shell with its handler and usage description
-    int cmd_add(const char *name, QShellCmdHandler handler, const char *usage);
+    // Adds a command to the shell with its handler and desc description
+    int cmd_add(const char *name, QShellCmdHandler handler, const char *desc);
 
     // Deletes a command from the shell by its name
     int cmd_del(const char *name);
 
     // Adds a subcommand to a parent command
-    int cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *usage);
+    int cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *desc);
 
     // Stops the shell thread
     int exit();
@@ -75,7 +75,7 @@ public:
 
     int print(const char *fmt, ...);
 
-    int echo(std::string str);
+    int xstr(std::string str);
 
     void exec();
 
