@@ -71,8 +71,7 @@ int keyboard_getch()
 QShell::QShell(QcliPrint print, GetChFunc getch)
 {
     this->getch = getch;
-    qcli_init(&cli, print);
-    inited = true;
+    inited = qcli_init(&cli, print) == QCLI_ERR_NONE;
 }
 
 QShell::~QShell()
@@ -88,8 +87,7 @@ QShell::~QShell()
 void QShell::init(QcliPrint print, GetChFunc getch)
 {
     this->getch = getch;
-    qcli_init(&cli, print);
-    inited = true;
+    inited = qcli_init(&cli, print) == QCLI_ERR_NONE;
 }
 
 int QShell::start()
@@ -189,7 +187,7 @@ int QShell::print(const char *fmt, ...)
 int QShell::cmd_add(const char *name, QShellCmdHandler handler, const char *desc)
 {
     if(name == nullptr || handler == nullptr || desc == nullptr) {
-        return -1;
+        return QCLI_ERR_NULL;
     }
     QcliCmd *cmd = new QcliCmd;
     int ret = qcli_add(&cli, cmd, name, handler, desc);
@@ -204,51 +202,30 @@ int QShell::cmd_add(const char *name, QShellCmdHandler handler, const char *desc
 int QShell::cmd_del(const char *name)
 {
     if(name == nullptr) {
-        return -1;
+        return QCLI_ERR_NULL;
     }
 
     QcliCmd *cmd = qcli_find(&cli, name);
-    if(qcli_del(&cli, name) == 0) {
+    int result = qcli_del(&cli, name);
+    if(result == QCLI_ERR_NONE) {
         for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
             if(*it == (uintptr_t)cmd) {
                 cmds_addr.erase(it);
+                delete cmd;
                 break;
             }
         }
-        delete cmd;
     }
 
-    return 0;
-}
-
-int QShell::cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *desc)
-{
-    if(parent_name == nullptr || subcmd_name == nullptr || handler == nullptr || desc == nullptr) {
-        return -1;
-    }
-
-    QcliCmd *parent = qcli_find(&cli, parent_name);
-    if(parent == nullptr) {
-        return -1;
-    }
-
-    QcliCmd *subcmd = new QcliCmd;
-    int ret = qcli_sub_add(parent, subcmd, subcmd_name, handler, desc);
-    if(ret != 0) {
-        delete subcmd;
-        return ret;
-    }
-    cmds_addr.push_back((uintptr_t)subcmd);
-    return ret;
+    return result;
 }
 
 int QShell::xstr(std::string str)
 {
     if(str.empty()) {
-        return -1;
+        return QCLI_ERR_PARAM;
     }
-    qcli_xstr(&cli, (char *)str.c_str());
-    return 0;
+    return qcli_xstr(&cli, str.data());
 }
 
 void QShell::exec()
@@ -325,15 +302,14 @@ void QShell::exec()
 
 int QShell::execc(char c)
 {
-    qcli_exec(&cli, c);
-    return 0;
+    return qcli_exec(&cli, c);
 }
 
 int QShell::args_help(ArgsTable *table, size_t sz)
 {
     size_t n = sz / sizeof(ArgsTable);
     if(table == nullptr) {
-        return -1;
+        return QCLI_ERR_NULL;
     }
     size_t l = 0;
     for(size_t i = 0; i < n; i++) {

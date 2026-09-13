@@ -55,9 +55,6 @@ public:
     // Deletes a command from the shell by its name
     int cmd_del(const char *name);
 
-    // Adds a subcommand to a parent command
-    int cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *desc);
-
     // Stops the shell thread
     int exit();
 

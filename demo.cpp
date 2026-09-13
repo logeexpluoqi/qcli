@@ -11,15 +11,37 @@
 
 static int args_dump(int argc, char **argv)
 {
-    std::printf(" dump:\r\n");
+    std::printf(" dump arguments:\r\n");
     for(int i = 0; i < argc; i++) {
         std::printf(" argv[%d]: %s\r\n", i, argv[i]);
     }
     return 0;
 }
 
+static int args_greet(int argc, char **argv)
+{
+    if(argc != 2) {
+        return QCLI_ERR_LESS;
+    }
+    std::printf(" hello, %s!\r\n", argv[1]);
+    return 0;
+}
+
+static int args_repeat(int argc, char **argv)
+{
+    if(argc != 2) {
+        return QCLI_ERR_LESS;
+    }
+    for(int i = 0; i < 3; i++) {
+        std::printf(" %d: %s\r\n", i + 1, argv[1]);
+    }
+    return 0;
+}
+
 static CmdTable table[] = {
-    { "dump", args_dump, "dump topic" },
+    { "dump", args_dump, "print all arguments" },
+    { "greet", args_greet, "greet <name>" },
+    { "repeat", args_repeat, "repeat <text>" },
 };
 
 static int cmd_demo(int argc, char **argv)
@@ -33,12 +55,29 @@ static int cmd_demo(int argc, char **argv)
 }
 CMD_REGIST("demo", cmd_demo, "demo command");
 
-static int subcmd_demo_dump(int argc, char **argv)
+static int echo_cmd(int argc, char **argv)
 {
-    std::printf(" subcmd:\r\n");
-    for(int i = 0; i < argc; i++) {
-        std::printf(" argv[%d]: %s\r\n", i, argv[i]);
+    if(argc < 2) {
+        return QCLI_ERR_LESS;
     }
+
+    std::printf(" echo:");
+    for(int i = 1; i < argc; i++) {
+        std::printf(" %s", argv[i]);
+    }
+    std::printf("\r\n");
     return 0;
 }
-CMD_SUB_REGIST("demo", "subdemo", subcmd_demo_dump, "sub-command demo");
+CMD_REGIST("echo", echo_cmd, "print all command arguments");
+
+static int status_cmd(int argc, char **argv)
+{
+    (void)argv;
+    if(argc != 1) {
+        return QCLI_ERR_MORE;
+    }
+    std::printf(" qcli demo is running\r\n");
+    std::printf(" commands: demo, echo, status\r\n");
+    return 0;
+}
+CMD_REGIST("status", status_cmd, "show demo status");
