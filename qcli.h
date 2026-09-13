@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-09-13 22:01:4
+ * Last Modified: 2026-09-14 01:06:32
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description: lightweight command-line interface for embedded systems
@@ -62,7 +62,7 @@ struct QcliList {
  * @note A callback may report QCLI_ERR_PARAM..QCLI_ERR_UNK directly.
  */
 typedef enum {
-    QCLI_ERR_NONE = 0,            /**< Operation successful. */
+    QCLI_ERR_NONE = 0,      /**< Operation successful. */
     QCLI_ERR_PARAM = -1,    /**< Malformed argument list. */
     QCLI_ERR_LESS = -2,     /**< Too few arguments. */
     QCLI_ERR_MORE = -3,     /**< Too many arguments. */
