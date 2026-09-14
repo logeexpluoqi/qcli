@@ -220,7 +220,7 @@ int QShell::cmd_del(const char *name)
     return result;
 }
 
-int QShell::xstr(std::string str)
+int QShell::xline(std::string str)
 {
     if(str.empty()) {
         return QCLI_ERR_PARAM;
@@ -300,7 +300,7 @@ void QShell::exec()
     }
 }
 
-int QShell::execc(char c)
+int QShell::xchar(char c)
 {
     return qcli_exec(&cli, c);
 }

@@ -41,8 +41,6 @@ public:
 
     void init(QcliPrint print, GetChFunc getch);
 
-    void exit_hook_set(Hook hook);
-
     // Starts the shell thread
     int start();
 
@@ -55,8 +53,23 @@ public:
     // Deletes a command from the shell by its name
     int cmd_del(const char *name);
 
+    // Prints a string to the shell output
+    int println(const char *fmt, ...);
+
+    int print(const char *fmt, ...);
+
+    int xline(std::string str);
+
+    void exec();
+
     // Stops the shell thread
     int exit();
+
+    int xchar(char c);
+
+    void title();
+
+    void exit_hook_set(Hook hook);
 
     // Function to display help for command arguments
     // typedef QCliArgsTable QCliArgsTable;
@@ -66,19 +79,6 @@ public:
     // argc: Number of this second arguments, skip the first argument(command name)
     // argv: Array of argument strings, skip the first argument(command name)
     int args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size);
-
-    // Prints a string to the shell output
-    int println(const char *fmt, ...);
-
-    int print(const char *fmt, ...);
-
-    int xstr(std::string str);
-
-    void exec();
-
-    int execc(char c);
-
-    void title();
 
 private:
     // Shell initialization flag
