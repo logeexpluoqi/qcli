@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-09-14 01:06:32
+ * Last Modified: 2026-09-23 00:15:5
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description: lightweight command-line interface for embedded systems
@@ -131,7 +131,7 @@ typedef struct {
     char *argv[QCLI_ARGC_MAX + 1]; /**< Points into args after parsing. */
     QcliRb history;                /**< Past lines, oldest first. */
 
-    QcliCmd disp_;    /**< Built-in "disp" command. */
+    QcliCmd echo_;    /**< Built-in "disp" command. */
     QcliCmd history_; /**< Built-in "hs" command. */
     QcliCmd help_;    /**< Built-in "?" command. */
     QcliCmd clear_;   /**< Built-in "clear" command. */

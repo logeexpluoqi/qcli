@@ -1,7 +1,7 @@
 /**
  * Author: luoqi
  * Created Date: 2024-08-01 16:28:28
- * Last Modified: 2026-09-13 22:01:20
+ * Last Modified: 2026-09-23 00:19:3
  * Modified By: luoqi at <**@****>
  * Copyright (c) 2025 <*****>
  * Description: single-layer command line interface
@@ -289,8 +289,8 @@ static int history_cb_(int argc, char **argv)
     return 0;
 }
 
-/* Built-in "disp": turn terminal output on or off. */
-static int disp_cb_(int argc, char **argv)
+/* Built-in "echo": turn terminal output on or off. */
+static int echo_cb_(int argc, char **argv)
 {
     if(argc != 3) {
         return QCLI_ERR_PARAM;
@@ -301,7 +301,7 @@ static int disp_cb_(int argc, char **argv)
     } else if(strcmp_(argv[1], "off") == 0) {
         cli->is_disp = false;
     } else {
-        cli->print(" disp on/off\r\n");
+        cli->print(" echo <on/off>\r\n");
     }
 
     return 0;
@@ -454,7 +454,7 @@ static int parser_(Qcli *cli, char *str, uint16_t len)
 /* Pointer identity, so a user command named "?" is not treated as a built-in. */
 static inline bool cmd_is_builtin_(Qcli *cli, QcliCmd *cmd)
 {
-    return cmd == &cli->help_ || cmd == &cli->clear_ || cmd == &cli->history_ || cmd == &cli->disp_;
+    return cmd == &cli->help_ || cmd == &cli->clear_ || cmd == &cli->history_ || cmd == &cli->echo_;
 }
 
 /* Built-ins receive the CLI object as a trailing argument. */
@@ -544,7 +544,7 @@ int qcli_init(Qcli *cli, QcliPrint print)
     qcli_add(cli, &cli->help_, "?", help_cb_, "show command list");
     qcli_add(cli, &cli->clear_, "clear", clear_cb_, "clear screen");
     qcli_add(cli, &cli->history_, "hs", history_cb_, "show history");
-    qcli_add(cli, &cli->disp_, "disp", disp_cb_, "display off or on");
+    qcli_add(cli, &cli->echo_, "echo", echo_cb_, "echo off/on");
 
 #if QCLI_SHOW_TITLE
     qcli_title(cli);
