@@ -39,7 +39,7 @@ extern "C" {
 #endif
 
 #if QCLI_LINE_MAX > 255
-#error "QCLI_LINE_MAX must fit in a byte (Qcli.cursor_idx is uint8_t)"
+#error "QCLI_LINE_MAX must fit in a byte (QcliCore.cursor_idx is uint8_t)"
 #endif
 
 #if QCLI_HISTORY_MAX > 255
@@ -97,7 +97,7 @@ typedef struct {
     const char *name; /**< Name typed on the terminal. */
     QcmdCallback cb;  /**< Called when the name matches argv[0]. */
     const char *desc; /**< One-line help text. */
-    QcliList node;    /**< Links the command into Qcli::cmds. */
+    QcliList node;    /**< Links the command into QcliCore::cmds. */
 } QcliCmd;
 
 /**
@@ -137,7 +137,7 @@ typedef struct {
     QcliCmd clear_;   /**< Built-in "clear" command. */
 
     QcliList cmds; /**< Head of the registered command list. */
-} Qcli;
+} QcliCore;
 
 /**
  * @brief Name/description/callback row, for commands that dispatch their own
@@ -153,28 +153,28 @@ typedef struct {
 int qcli_args_trick(int argc, char **argv, const QcliTable *table, size_t table_size);
 
 /* Prepare cli for use and register the built-in commands. */
-int qcli_init(Qcli *cli, QcliPrint print);
+int qcli_init(QcliCore *cli, QcliPrint print);
 
 /* Print the banner. */
-int qcli_title(Qcli *cli);
+int qcli_title(QcliCore *cli);
 
 /* Register a command under the given name. */
-int qcli_add(Qcli *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc);
+int qcli_add(QcliCore *cli, QcliCmd *cmd, const char *name, QcmdCallback cb, const char *desc);
 
 /* Unregister a command by name. */
-int qcli_del(Qcli *cli, const char *name);
+int qcli_del(QcliCore *cli, const char *name);
 
 /* Register an already initialised command node. */
-int qcli_insert(Qcli *cli, QcliCmd *cmd);
+int qcli_insert(QcliCore *cli, QcliCmd *cmd);
 
 /* Look up a command by name; NULL when absent. */
-QcliCmd *qcli_find(Qcli *cli, const char *name);
+QcliCmd *qcli_find(QcliCore *cli, const char *name);
 
 /* Feed one input byte from the terminal. */
-int qcli_exec(Qcli *cli, char c);
+int qcli_exec(QcliCore *cli, char c);
 
 /* Run a command line without a terminal, e.g. from a script. */
-int qcli_xstr(Qcli *cli, char *str);
+int qcli_xstr(QcliCore *cli, char *str);
 
 #ifdef __cplusplus
 }

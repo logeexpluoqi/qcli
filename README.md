@@ -57,7 +57,7 @@ static int hello_cb(int argc, char **argv)
     return 0;
 }
 
-Qcli cli;
+QcliCore cli;
 QcliCmd hello;
 qcli_init(&cli, printf);
 qcli_add(&cli, &hello, "hello", hello_cb, "say hello");
