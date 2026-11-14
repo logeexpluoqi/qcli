@@ -543,7 +543,7 @@ int qcli_init(QcliCore *cli, QcliPrint print)
     cli->args[0] = '\0';
     qcli_add(cli, &cli->help_, "?", help_cb_, "show command list");
     qcli_add(cli, &cli->clear_, "clear", clear_cb_, "clear screen");
-    qcli_add(cli, &cli->history_, "hs", history_cb_, "show history");
+    qcli_add(cli, &cli->history_, "history", history_cb_, "show history");
     qcli_add(cli, &cli->echo_, "echo", echo_cb_, "echo off/on");
 
 #if QCLI_SHOW_TITLE
