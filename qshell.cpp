@@ -16,7 +16,13 @@
 #include <unistd.h>
 #endif
 #include <cstdarg>
+#include <algorithm>
 #include "qshell.h"
+
+#ifndef _WIN32
+static struct termios g_org_termios;
+static bool g_termios_saved = false;
+#endif
 
 void set_echo(bool enable)
 {
@@ -31,14 +37,30 @@ void set_echo(bool enable)
     }
     SetConsoleMode(hStdin, mode);
 #else
-    int retval = 0;
-    if(!enable) {
-        retval = system("stty raw -echo");
+    if(enable) {
+        if(g_termios_saved) {
+            tcsetattr(STDIN_FILENO, TCSANOW, &g_org_termios);
+            g_termios_saved = false;
+        }
     } else {
-        retval = system("stty sane");
-    }
-    if(retval != 0) {
-        printf("set echo failed\r\n");
+        if(!g_termios_saved) {
+            if(tcgetattr(STDIN_FILENO, &g_org_termios) != 0) {
+                printf("set echo: tcgetattr failed\r\n");
+                return;
+            }
+            g_termios_saved = true;
+        }
+        struct termios raw = g_org_termios;
+        /* cfmakeraw() replicates "stty raw": it disables canonical mode,
+         * echo, signals, and CR->NL input translation (ICRNL). Without it
+         * the Enter key would arrive as LF ('\n'), which qcli treats as a
+         * no-op on an empty line. */
+        cfmakeraw(&raw);
+        raw.c_cc[VMIN] = 1;
+        raw.c_cc[VTIME] = 0;
+        if(tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0) {
+            printf("set echo: tcsetattr failed\r\n");
+        }
     }
 #endif
 }
@@ -71,8 +93,9 @@ int keyboard_getch()
 QShell::QShell(QcliPrint print, GetChFunc getch)
 {
     this->getch = getch;
-    qcli_init(&cli, print);
-    inited = true;
+    if(qcli_init(&cli, print) == QCLI_ERR_NONE) {
+        inited = true;
+    }
 }
 
 QShell::~QShell()
@@ -87,9 +110,13 @@ QShell::~QShell()
 
 void QShell::init(QcliPrint print, GetChFunc getch)
 {
+    if(inited) {
+        return;
+    }
     this->getch = getch;
-    qcli_init(&cli, print);
-    inited = true;
+    if(qcli_init(&cli, print) == QCLI_ERR_NONE) {
+        inited = true;
+    }
 }
 
 int QShell::start()
@@ -105,10 +132,10 @@ int QShell::start()
 
 int QShell::exit()
 {
+    is_exit = true;
     if(thr.joinable()) {
         thr.join();
     }
-    is_exit = true;
     return 0;
 }
 
@@ -136,12 +163,12 @@ int QShell::println(const char *fmt, ...)
     va_end(args2);
 
     if(sz < 0) {
-        cli.print(" #! QShell::echo: vsnprintf failed\r\n");
+        cli.print(" #! QShell::println: vsnprintf failed\r\n");
         return -1;
     }
 
     if(sz != len) {
-        cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
+        cli.print(" #! QShell::println: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
     }
 
@@ -173,12 +200,12 @@ int QShell::print(const char *fmt, ...)
     va_end(args2);
 
     if(sz < 0) {
-        cli.print(" #! QShell::echo: vsnprintf failed\r\n");
+        cli.print(" #! QShell::print: vsnprintf failed\r\n");
         return -1;
     }
 
     if(sz != len) {
-        cli.print(" #! QShell::echo: length mismatch, expected: %d, actual: %d\r\n", len, sz);
+        cli.print(" #! QShell::print: length mismatch, expected: %d, actual: %d\r\n", len, sz);
         return -1;
     }
 
@@ -208,7 +235,8 @@ int QShell::cmd_del(const char *name)
     }
 
     QcliCmd *cmd = qcli_find(&cli, name);
-    if(qcli_del(&cli, name) == 0) {
+    int ret = qcli_del(&cli, name);
+    if(ret == 0) {
         for(auto it = cmds_addr.begin(); it != cmds_addr.end(); ++it) {
             if(*it == (uintptr_t)cmd) {
                 cmds_addr.erase(it);
@@ -218,7 +246,7 @@ int QShell::cmd_del(const char *name)
         delete cmd;
     }
 
-    return 0;
+    return ret;
 }
 
 int QShell::cmd_sub_add(const char *parent_name, const char *subcmd_name, QShellCmdHandler handler, const char *desc)
@@ -227,19 +255,12 @@ int QShell::cmd_sub_add(const char *parent_name, const char *subcmd_name, QShell
         return -1;
     }
 
-    QcliCmd *parent = qcli_find(&cli, parent_name);
-    if(parent == nullptr) {
-        return -1;
-    }
-
-    QcliCmd *subcmd = new QcliCmd;
-    int ret = qcli_sub_add(parent, subcmd, subcmd_name, handler, desc);
-    if(ret != 0) {
-        delete subcmd;
-        return ret;
-    }
-    cmds_addr.push_back((uintptr_t)subcmd);
-    return ret;
+    // The new qcli core does not maintain a per-command subcommand list;
+    // subcommands are dispatched through qcli_args_trick() with a QcliTable.
+    // Store the registration here so args_exec/args_help can build the table
+    // on demand, merging it with any static table supplied by the caller.
+    sub_cmds[parent_name].push_back({ subcmd_name, handler, desc });
+    return 0;
 }
 
 int QShell::xstr(std::string str)
@@ -247,15 +268,13 @@ int QShell::xstr(std::string str)
     if(str.empty()) {
         return -1;
     }
-    qcli_xstr(&cli, (char *)str.c_str());
-    return 0;
+    return qcli_xstr(&cli, (char *)str.c_str());
 }
 
 void QShell::exec()
 {
     set_echo(false);
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
     while(!is_exit) {
         int c = 0;
         if(getch != nullptr) {
@@ -263,8 +282,12 @@ void QShell::exec()
         } else {
             c = keyboard_getch();
         }
-        if(c == 0 || c == EOF) {
+        if(c == 0) {
             continue;
+        }
+        if(c == EOF) {
+            // stdin closed: exit the shell cleanly instead of busy-looping
+            break;
         }
         if(c == 3) { // ctrl+c
             cli.print("\33[2K");
@@ -273,48 +296,9 @@ void QShell::exec()
             break;
         }
 
-#ifdef _WIN32
-        if(c == 0xe0) {
-            qcli_exec(&cli, c);
-            int next_c = 0;
-            if(getch != nullptr) {
-                next_c = getch();
-            } else {
-                next_c = keyboard_getch();
-            }
-            if(next_c != 0 && next_c != EOF) {
-                if(next_c == 3) {
-                    cli.print("\33[2K");
-                    cli.print("\033[H\033[J");
-                    cli.print(" \r\n#! QCLI Exit !\r\n");
-                    break;
-                }
-                qcli_exec(&cli, next_c);
-            }
-            continue;
-        } else {
-            qcli_exec(&cli, c);
-        }
-#else
-        if(c == 27) {
-            qcli_exec(&cli, c);
-            int next_c1 = keyboard_getch();
-            if(next_c1 != 0 && next_c1 != EOF) {
-                qcli_exec(&cli, next_c1);
-                if(next_c1 == 91) {
-                    int next_c2 = keyboard_getch();
-                    if(next_c2 != 0 && next_c2 != EOF) {
-                        qcli_exec(&cli, next_c2);
-                    }
-                }
-            }
-            continue;
-        } else {
-            qcli_exec(&cli, c);
-        }
-#endif
-        c = (c == 127) ? 8 : c;
-        std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        // qcli_exec's internal state machine handles escape sequences
+        // (ESC / 0xe0) byte-by-byte, so no manual pre-parsing is needed.
+        qcli_exec(&cli, c);
     }
     set_echo(true);
 
@@ -329,26 +313,56 @@ int QShell::execc(char c)
     return 0;
 }
 
-int QShell::args_help(ArgsTable *table, size_t sz)
+int QShell::args_help(const char *parent, ArgsTable *table, size_t sz)
 {
-    size_t n = sz / sizeof(ArgsTable);
     if(table == nullptr) {
         return -1;
     }
-    size_t l = 0;
-    for(size_t i = 0; i < n; i++) {
-        l = std::max(l, strlen(table[i].name));
+
+    // Merge the caller's static table with subcommands registered via
+    // cmd_sub_add() for this parent.
+    std::vector<QcliTable> merged;
+    size_t static_n = sz / sizeof(ArgsTable);
+    for(size_t i = 0; i < static_n; i++) {
+        merged.push_back(table[i]);
+    }
+    auto it = sub_cmds.find(parent ? parent : "");
+    if(it != sub_cmds.end()) {
+        for(auto &sc : it->second) {
+            merged.push_back({ sc.name.c_str(), sc.cb, sc.desc.c_str() });
+        }
     }
 
-    for(size_t i = 0; i < n; i++) {
-        cli.print(" %-*s  %s\r\n", l, table[i].name, table[i].desc);
+    size_t l = 0;
+    for(auto &e : merged) {
+        l = std::max(l, strlen(e.name));
+    }
+
+    for(auto &e : merged) {
+        cli.print(" %-*s  %s\r\n", (int)l, e.name, e.desc);
     }
     return 0;
 }
 
 int QShell::args_exec(int argc, char **argv, const ArgsTable *table, size_t table_size)
 {
-    return qcli_args_trick(argc, argv, table, table_size);
+    // Merge the static table with subcommands registered via cmd_sub_add()
+    // for the parent command (argv[0]).
+    std::vector<QcliTable> merged;
+    size_t static_n = table_size / sizeof(ArgsTable);
+    for(size_t i = 0; i < static_n; i++) {
+        merged.push_back(table[i]);
+    }
+    if(argc > 0 && argv != nullptr && argv[0] != nullptr) {
+        auto it = sub_cmds.find(argv[0]);
+        if(it != sub_cmds.end()) {
+            for(auto &sc : it->second) {
+                merged.push_back({ sc.name.c_str(), sc.cb, sc.desc.c_str() });
+            }
+        }
+    }
+
+    return qcli_args_trick(argc, argv, merged.data(), merged.size() * sizeof(QcliTable));
 }
 
 void QShell::title(void)

@@ -71,14 +71,14 @@ using CmdTable = QShell::ArgsTable;
 #define CMD_SUB_REGIST(parent, name, cb, help) static CmdMgr __cmd_##cb(parent, name, cb, help)
 
 /* trick to parse command line arguments */
-#define CMD_ARGS_TRICK(argc, argv, table)                                \
-    if(CmdMgr::cli == nullptr) {                                         \
-        return -1;                                                       \
-    }                                                                    \
-    if(ISARGV(1, ?) && ISARGC(2)) {                                      \
-        return CmdMgr::cli->args_help(table, sizeof(table));             \
-    } else {                                                             \
-        return CmdMgr::cli->args_exec(argc, argv, table, sizeof(table)); \
+#define CMD_ARGS_TRICK(argc, argv, table)                                      \
+    if(CmdMgr::cli == nullptr) {                                               \
+        return -1;                                                             \
+    }                                                                          \
+    if(ISARGV(1, ?) && ISARGC(2)) {                                            \
+        return CmdMgr::cli->args_help(argv[0], table, sizeof(table));          \
+    } else {                                                                   \
+        return CmdMgr::cli->args_exec(argc, argv, table, sizeof(table));       \
     }
 #else
 #define CmdTable              ((void)0)

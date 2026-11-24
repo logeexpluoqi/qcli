@@ -12,14 +12,15 @@
 #pragma once
 
 #include <thread>
+#include <atomic>
 #include <cstdint>
 #include <cstdio>
 #include <string>
 #include <vector>
 #include <cstring>
 #include <functional>
+#include <unordered_map>
 
-#define QCLI_USE_STDLIBC
 #include "qcli.h"
 
 #define ISARG(str1, str2) ((str1) != nullptr && (str2) != nullptr && strcmp((str1), (str2)) == 0)
@@ -62,8 +63,8 @@ public:
     int exit();
 
     // Function to display help for command arguments
-    // typedef QCliArgsTable QCliArgsTable;
-    int args_help(ArgsTable *table, size_t sz);
+    // parent: name of the parent command (argv[0]), used to look up dynamic subcommands
+    int args_help(const char *parent, ArgsTable *table, size_t sz);
 
     // Function to handle command arguments
     // argc: Number of this second arguments, skip the first argument(command name)
@@ -91,12 +92,20 @@ private:
 
     // Thread object for running the shell
     std::thread thr;
-    bool is_exit{ false };
+    std::atomic<bool> is_exit{ false };
 
     // CLI object for handling command line interface operations
-    Qcli cli;
+    QcliCore cli;
 
     std::vector<uintptr_t> cmds_addr;
+
+    // Dynamically registered subcommands, keyed by parent command name.
+    struct SubCmd {
+        std::string name;
+        QShellCmdHandler cb;
+        std::string desc;
+    };
+    std::unordered_map<std::string, std::vector<SubCmd>> sub_cmds;
 
     // Function pointer to the get character function
     GetChFunc getch;
